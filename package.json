@@ -1,0 +1,17 @@
+{
+  "name": "bitcoin-remunerate",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server",
+    "dev-server": "nodemon server"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^1.8.1"
+  },
+  "dependencies": {
+  }
+}
