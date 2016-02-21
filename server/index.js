@@ -8,20 +8,18 @@ var app = express();
 app.get('/:article', function(req, res) {
   if(!keyValid(req.query.key, req.params.article)) {
     var newKey = newPublicKey(req.params.article)
-    return res.status(402).send("Please pay 1 satoshi to " + newKey +
-        "\n<a href='bitcoin:"
-        + newKey + "'>click me to pay</a>");
+    return res.status(402).json(sendPrompt(newKey))
   }
 
   request(addressURL(req.query.key), function(error, response, body) {
     if(error) {
-      return res.status(500).send('bad times getting info from ' + addressURL());
+      return res.status(500).send('ERROR: bad times getting info from ' + addressURL());
     }
 
     if (isPaid(body)) {
-      res.status(200).send("Super interesting article about the new insteresting bitcoin paywall technology. Hmmmmm.");
+      res.status(200).send(fetchContent(req.params.article));
     } else {
-      res.status(402).send("please pay to " + req.query.key)
+      res.status(402).json(sendPrompt(req.query.key))
     }
   })
 });
@@ -79,4 +77,16 @@ function keyValid(key, articleId) {
 
   // todo: lookup in persisted set of keypair for articleId
   return typeof key === 'undefined' ? false : true;
+}
+
+function fetchContent(articleId) {
+  return "Super interesting article about the new insteresting bitcoin paywall technology. Hmmmmm.";
+}
+
+
+function sendPrompt(key) {
+  return {
+    display: 'payment.prompt',
+    key: key,
+  };
 }
