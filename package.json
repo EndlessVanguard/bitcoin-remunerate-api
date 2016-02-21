@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server",
-    "dev-server": "nodemon server"
+    "devserver": "nodemon server"
   },
   "author": "",
   "license": "ISC",
@@ -13,5 +13,7 @@
     "nodemon": "^1.8.1"
   },
   "dependencies": {
+    "bitcoinjs-lib": "^2.2.0",
+    "cors": "^2.7.1"
   }
 }

@@ -2,12 +2,17 @@ var path = require('path');
 var express = require('express');
 var request = require('request');
 var bitcoin = require('bitcoinjs-lib');
+var cors = require('cors');
 
 var app = express();
 
-app.get('/:article', function(req, res) {
-  if(!keyValid(req.query.key, req.params.article)) {
-    var newKey = newPublicKey(req.params.article)
+app.use(cors());
+
+// TODO: there will be an apiToken per client..
+// app.get('/:apiToken/:content', function(req, res) {
+app.get('/:contentId', function(req, res) {
+  if(!keyValid(req.query.key, req.params.contentId)) {
+    var newKey = newPublicKey(req.params.contentId)
     return res.status(402).json(sendPrompt(newKey))
   }
 
@@ -17,11 +22,11 @@ app.get('/:article', function(req, res) {
     }
 
     if (isPaid(body)) {
-      res.status(200).send(fetchContent(req.params.article));
+      res.status(200).send(fetchContent(req.params.contentId));
     } else {
       res.status(402).json(sendPrompt(req.query.key))
     }
-  })
+  });
 });
 
 var port = 3000;
@@ -35,14 +40,14 @@ function addressURL(key) {
   return "https://blockchain.info/rawaddr/" + key;
 }
 
-function newPublicKey(articleId) {
+function newPublicKey(contentId) {
   // generate a keypair
   var keypair = bitcoin.ECPair.makeRandom();
   var publicKey = keypair.getAddress();
   var privateKey = keypair.toWIF();
 
   saveKeyPair({
-    articleId: articleId,
+    contentId: contentId,
     publicKey: publicKey,
     privateKey: privateKey,
   });
@@ -67,20 +72,20 @@ function saveKeyPair(data) {
   // todo: persist somewhere we can query
   // data.publicKey
   // data.privateKey
-  // data.articleId
+  // data.contentId
 }
 
-function keyValid(key, articleId) {
+function keyValid(key, contentId) {
   // todo: moar validations
   // if(key.length < 34)
   // if(key[0] !== 1)
 
-  // todo: lookup in persisted set of keypair for articleId
+  // todo: lookup in persisted set of keypair for contentId
   return typeof key === 'undefined' ? false : true;
 }
 
-function fetchContent(articleId) {
-  return "Super interesting article about the new insteresting bitcoin paywall technology. Hmmmmm.";
+function fetchContent(contentId) {
+  return "Super interesting content about the new insteresting bitcoin paywall technology. Hmmmmm.";
 }
 
 

@@ -47,9 +47,8 @@ If that is greater than, say $0.10*BTC/USD then return the article in question. 
 - do you have a bitcoin wallet? if not, go to https://www.coinbase.com/
 - now that you have a wallet, we can sink payments to you
   * on some interval we flush payments to their wallet
--
 
-## as a medium thing
+## use case: medium
 - article page loads, and user is prompted to pay
   * with a modal yep / nope
   * with top fold visible and rest obscured by css blur
