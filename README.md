@@ -30,14 +30,12 @@ When users come to /secret-article?key=<PAYABLE_ADDRESS>, we check https://block
 
 If that is greater than, say $0.10*BTC/USD then return the article in question. Else redirect user to a page saying we want CASH!!!
 
----
-
 ## HOW DO WE MAKE SOME BITS OFF DIS!?
 - 10c button in a browser (tipping button in your browser)
 - offer it as a plugin to CMS's
 - make our own CMS
   * license
-  * as a hsoted service (medium with paywall)
+  * as a hosted service (medium with paywall)
 - get hired to do it on-prem for New York Times :D
 - Publish a whitepaper
   * as a hook to the hosted service
@@ -53,8 +51,14 @@ If that is greater than, say $0.10*BTC/USD then return the article in question. 
 - do you have a bitcoin wallet? if not, go to https://www.coinbase.com/
 - now that you have a wallet, we can sink payments to you
   * on some interval we flush payments to their wallet
+- what metrics do you currently have / wish to have?
+  * track volume of access (events: generate key, key access denied, key access granted)
 
 ## use case: medium
 - article page loads, and user is prompted to pay
   * with a modal yep / nope
   * with top fold visible and rest obscured by css blur
+
+## use case: white papers
+- instead of needing to pay a publisher a large subscription fee or 30€ per paper, have small fee to read paper
+  * opens the door for enthusists, smaller budget institutions
