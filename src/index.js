@@ -2,10 +2,11 @@ const express = require('express')
 const request = require('request')
 const bitcoin = require('bitcoinjs-lib')
 const cors = require('cors')
+const redis = require('redis')
 
 const app = express()
 
-const dataStore = {}
+const redisDb = redis.createClient()
 
 app.use(cors())
 
@@ -14,21 +15,23 @@ app.get('/:contentId', function (req, res) {
   const key = req.query.key
   const contentId = req.params.contentId
 
-  if (!keyLookup(key, contentId)) {
-    const newKey = newPublicKey(contentId)
-    return res.status(402).json(sendPrompt(newKey))
-  }
-
-  request(blockchainKeyLookupUrl(key), function (error, response, body) {
-    if (error) {
-      return res.status(500).send('ERROR: bad times getting info from ' + blockchainKeyLookupUrl(key))
+  keyLookup(key, contentId).then((keyFound) => {
+    if (!keyFound) {
+      const newKey = newPublicKey(contentId)
+      return res.status(402).json(sendPrompt(newKey))
     }
 
-    if (isPaid(body)) {
-      res.status(200).send(fetchContent(contentId))
-    } else {
-      res.status(402).json(sendPrompt(key))
-    }
+    request(blockchainKeyLookupUrl(key), function (error, response, body) {
+      if (error) {
+        return res.status(500).send('ERROR: bad times getting info from ' + blockchainKeyLookupUrl(key))
+      }
+
+      if (isPaid(body)) {
+        res.status(200).send(fetchContent(contentId))
+      } else {
+        res.status(402).json(sendPrompt(key))
+      }
+    })
   })
 })
 
@@ -70,13 +73,12 @@ function isPaid (data) {
 }
 
 // Data persistence
-
 const saveKeyPair = (data) => {
-  dataStore[data.publicKey] = {
+  redisDb.set(data.publicKey, JSON.stringify({
     contentId: data.contentId,
     publicKey: data.publicKey,
     privateKey: data.privateKey
-  }
+  }))
 }
 
 function keyLookup (publicKey, contentId) {
@@ -84,7 +86,13 @@ function keyLookup (publicKey, contentId) {
   // if (publicKey.length < 34)
   // if (publicKey[0] !== 1)
 
-  return !!(dataStore[publicKey] && dataStore[publicKey].contentId === contentId)
+  return new Promise(function (resolve, reject) {
+    redisDb.get(publicKey, (err, data) => {
+      if (err) reject(err)
+      const parsedData = JSON.parse(data)
+      resolve(!!parsedData && (parsedData.contentId === contentId))
+    })
+  })
 }
 
 function fetchContent (contentId) {
