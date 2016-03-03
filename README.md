@@ -1,4 +1,7 @@
 # bitcoin-remunerate
+[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
+
+
 A scheme for trustless, decentralized, anonymous, remuneration for content creators.
 
 ## Tech statement
