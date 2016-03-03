@@ -1,53 +1,58 @@
-var express = require('express')
-var request = require('request')
-var bitcoin = require('bitcoinjs-lib')
-var cors = require('cors')
+const express = require('express')
+const request = require('request')
+const bitcoin = require('bitcoinjs-lib')
+const cors = require('cors')
 
-var app = express()
+const app = express()
+
+const dataStore = {}
 
 app.use(cors())
 
 // TODO: there will be an apiToken per client..
 app.get('/:contentId', function (req, res) {
-  if (!keyValid(req.query.key, req.params.contentId)) {
-    var newKey = newPublicKey(req.params.contentId)
+  const key = req.query.key
+  const contentId = req.params.contentId
+
+  if (!keyLookup(key, contentId)) {
+    const newKey = newPublicKey(contentId)
     return res.status(402).json(sendPrompt(newKey))
   }
 
-  request(addressURL(req.query.key), function (error, response, body) {
+  request(blockchainKeyLookupUrl(key), function (error, response, body) {
     if (error) {
-      return res.status(500).send('ERROR: bad times getting info from ' + addressURL())
+      return res.status(500).send('ERROR: bad times getting info from ' + blockchainKeyLookupUrl(key))
     }
 
     if (isPaid(body)) {
-      res.status(200).send(fetchContent(req.params.contentId))
+      res.status(200).send(fetchContent(contentId))
     } else {
-      res.status(402).json(sendPrompt(req.query.key))
+      res.status(402).json(sendPrompt(key))
     }
   })
 })
 
-var port = 3000
+const port = 3000
 app.listen(port, function () {
   console.log('server on', port)
 })
 
 // bitcoin helper
 
-function addressURL (key) {
+function blockchainKeyLookupUrl (key) {
   return 'https://blockchain.info/rawaddr/' + key
 }
 
 function newPublicKey (contentId) {
   // generate a keypair
-  var keypair = bitcoin.ECPair.makeRandom()
-  var publicKey = keypair.getAddress()
-  var privateKey = keypair.toWIF()
+  const keypair = bitcoin.ECPair.makeRandom()
+  const publicKey = keypair.getAddress()
+  const privateKey = keypair.toWIF()
 
   saveKeyPair({
-    contentId: contentId,
-    publicKey: publicKey,
-    privateKey: privateKey
+    contentId,
+    publicKey,
+    privateKey
   })
 
   return publicKey
@@ -59,27 +64,27 @@ function isPaid (data) {
   if (data === 'Input too short' || data === 'Checksum does not validate') {
     return false
   }
-  var price = 1
-  var isPaid = JSON.parse(data).total_received > price
+  const price = 1
+  const isPaid = JSON.parse(data).total_received > price
   return isPaid
 }
 
 // Data persistence
 
-function saveKeyPair (data) {
-  // todo: persist somewhere we can query
-  // data.publicKey
-  // data.privateKey
-  // data.contentId
+const saveKeyPair = (data) => {
+  dataStore[data.publicKey] = {
+    contentId: data.contentId,
+    publicKey: data.publicKey,
+    privateKey: data.privateKey
+  }
 }
 
-function keyValid (key, contentId) {
+function keyLookup (publicKey, contentId) {
   // todo: moar validations
-  // if (key.length < 34)
-  // if (key[0] !== 1)
+  // if (publicKey.length < 34)
+  // if (publicKey[0] !== 1)
 
-  // todo: lookup in persisted set of keypair for contentId
-  return typeof key === 'undefined'
+  return !!(dataStore[publicKey] && dataStore[publicKey].contentId === contentId)
 }
 
 function fetchContent (contentId) {

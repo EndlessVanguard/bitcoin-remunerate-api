@@ -4,17 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start":     "standard && node src/index.js",
-    "devserver": "standard && nodemon src/index.js"
+    "start": "standard && node src/index.js",
+    "devserver": "standard && parallelshell 'redis-server ./config/redis.conf' 'nodemon src/index.js'"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "nodemon": "^1.8.1"
+    "nodemon": "^1.8.1",
+    "parallelshell": "^2.0.0"
   },
   "dependencies": {
     "bitcoinjs-lib": "^2.2.0",
     "cors": "^2.7.1",
+    "redis": "^2.4.2",
     "request": "^2.69.0"
   }
 }
