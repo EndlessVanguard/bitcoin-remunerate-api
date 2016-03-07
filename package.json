@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "standard && node src/index.js",
-    "devserver": "standard && parallelshell 'redis-server ./config/redis.conf' 'nodemon src/index.js'"
+    "start": "standard ./src/**/* && node src/index.js",
+    "devserver": "standard ./src/**/* && parallelshell 'redis-server ./config/redis.conf' 'nodemon src/index.js'"
   },
   "author": "",
   "license": "ISC",

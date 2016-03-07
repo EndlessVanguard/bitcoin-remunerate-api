@@ -62,7 +62,6 @@ function newPublicKey (contentId) {
 }
 
 // helper for data fetch
-
 function isPaid (data) {
   if (data === 'Input too short' || data === 'Checksum does not validate') {
     return false
@@ -86,7 +85,7 @@ function keyLookup (publicKey, contentId) {
   // if (publicKey.length < 34)
   // if (publicKey[0] !== 1)
 
-  return new Promise(function (resolve, reject) {
+  return new Promise((resolve, reject) => {
     redisDb.get(publicKey, (err, data) => {
       if (err) reject(err)
       const parsedData = JSON.parse(data)
@@ -96,7 +95,7 @@ function keyLookup (publicKey, contentId) {
 }
 
 function fetchContent (contentId) {
-  return 'Super interesting content about the new insteresting bitcoin paywall technology. Hmmmmm.'
+  return require('../config/content-database.js')[contentId]
 }
 
 function sendPrompt (key) {
