@@ -7,8 +7,11 @@ A scheme for trustless, decentralized, anonymous, remuneration for content creat
 ## Tech statement
 An http header from the server hosting something,
 
-## routes
+## Dependencies
+* Node.js (tested with `v5.6.0`)
+* Redis (tested with `3.0.7`)
 
+## routes
 * /secret-article
 => you get an html response body, with a http header PAYABLE_ADDRESS that should receive funds before access is granted to the 'secret article'
 
