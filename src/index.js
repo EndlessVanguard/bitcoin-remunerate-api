@@ -1,12 +1,10 @@
-const express = require('express')
-const request = require('request')
 const bitcoin = require('bitcoinjs-lib')
 const cors = require('cors')
-const redis = require('redis')
+const express = require('express')
+const request = require('request')
 
 const app = express()
-
-const redisDb = redis.createClient()
+const redisDb = require('config/redis')
 
 app.use(cors())
 
@@ -15,7 +13,7 @@ app.get('/:contentId', function (req, res) {
   const key = req.query.key
   const contentId = req.params.contentId
 
-  keyLookup(key, contentId).then((keyFound) => {
+  isKeyAndContentPaired(key, contentId).then((keyFound) => {
     if (!keyFound) {
       const newKey = newPublicKey(contentId)
       return res.status(402).json(sendPrompt(newKey))
@@ -27,6 +25,7 @@ app.get('/:contentId', function (req, res) {
       }
 
       if (isPaid(body)) {
+        markAsPaid(key);
         res.status(200).send(fetchContent(contentId))
       } else {
         res.status(402).json(sendPrompt(key))
@@ -80,7 +79,7 @@ const saveKeyPair = (data) => {
   }))
 }
 
-function keyLookup (publicKey, contentId) {
+function isKeyAndContentPaired (publicKey, contentId) {
   // todo: moar validations
   // if (publicKey.length < 34)
   // if (publicKey[0] !== 1)
@@ -90,6 +89,20 @@ function keyLookup (publicKey, contentId) {
       if (err) reject(err)
       const parsedData = JSON.parse(data)
       resolve(!!parsedData && (parsedData.contentId === contentId))
+    })
+  })
+}
+
+function markAsPaid(key) {
+  return new Promise((resolve, reject) => {
+    redisDb.get(key, (err, data) => {
+      if(err) reject(err)
+      const parsedData = JSON.parse(data)
+      if(!parsedData.paymentTimestamp) {
+        updateData = parsedData
+        updateData.paymentTimestamp = Date.now()
+        redisDb.set(key, JSON.parse(updateData))
+      }
     })
   })
 }

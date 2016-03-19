@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "standard ./src/**/* && node src/index.js",
-    "devserver": "standard ./src/**/* && parallelshell 'redis-server ./config/redis.conf' 'nodemon src/index.js'"
+    "devserver": "standard ./src/**/* && parallelshell 'redis-server ./config/redis.conf' 'nodemon src/index.js'",
+    "test": "tape src/**/*.spec.js"
   },
   "author": "",
   "license": "ISC",
