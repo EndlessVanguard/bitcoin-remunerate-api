@@ -4,9 +4,9 @@ const express = require('express')
 const request = require('request')
 
 const app = express()
-const redisDb = require('config/redis')
+const redisDb = require('./config/redis')
 
-app.use(cors())
+app.use(cors());
 
 // TODO: there will be an apiToken per client..
 app.get('/:contentId', function (req, res) {
@@ -25,7 +25,7 @@ app.get('/:contentId', function (req, res) {
       }
 
       if (isPaid(body)) {
-        markAsPaid(key);
+        markAsPaid(key)
         res.status(200).send(fetchContent(contentId))
       } else {
         res.status(402).json(sendPrompt(key))
@@ -36,7 +36,7 @@ app.get('/:contentId', function (req, res) {
 
 const port = 3000
 app.listen(port, function () {
-  console.log('server on', port)
+  console.log('server on', port, "😎")
 })
 
 // bitcoin helper

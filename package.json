@@ -3,15 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "start": "standard ./src/**/* && node src/index.js",
-    "devserver": "standard ./src/**/* && parallelshell 'redis-server ./config/redis.conf' 'nodemon src/index.js'",
-    "test": "tape src/**/*.spec.js"
-  },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "nodemon": "^1.8.1",
+    "npm-watch": "^0.1.1",
     "parallelshell": "^2.0.0",
     "standard": "^6.0.8",
     "tape": "^4.5.1"
@@ -22,5 +17,16 @@
     "express": "^4.13.4",
     "redis": "^2.4.2",
     "request": "^2.69.0"
+  },
+  "scripts": {
+    "start": "standard ./src/**/* && node src/index.js",
+    "devserver": "npm run lint && parallelshell 'redis-server ./config/redis.conf' 'node src/index.js'",
+    "lint": "standard ./src/**/*",
+    "test": "tape src/**/*.spec.js",
+    "watch": "npm-watch"
+  },
+  "watch": {
+    "devserver": "src/**/*.js",
+    "test": "src/**/*.js"
   }
 }
