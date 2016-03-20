@@ -2,36 +2,57 @@ const bitcoin = require('bitcoinjs-lib')
 const cors = require('cors')
 const express = require('express')
 const request = require('request')
+const isNil = require('lodash/isNil')
 
 const app = express()
+const blockchainApi = require('./utils/blockchainApi')
 const redisDb = require('./config/redis')
 
 app.use(cors());
 
 // TODO: there will be an apiToken per client..
 app.get('/:contentId', function (req, res) {
-  const key = req.query.key
+  const address = req.query.address
   const contentId = req.params.contentId
 
-  isKeyAndContentPaired(key, contentId).then((keyFound) => {
-    if (!keyFound) {
-      const newKey = newPublicKey(contentId)
-      return res.status(402).json(sendPrompt(newKey))
-    }
+  if (isNil(address)) {
+    const newKey = newKeypair(contentId)
+    return res.status(402).json(sendPrompt(newKey))
+  }
+  if (isNil(contentId)) {
+    return res.status(400).send('missing contentId. Remember to put something after the /!')
+  }
 
-    return blockchainApi.lookup(key)
-      .then((body) => {
-        if (isPaid(body)) {
-          markAsPaid(key)
-          res.status(200).send(fetchContent(contentId))
-        } else {
-          res.status(402).json(sendPrompt(key))
-        }
-      })
-      .catch((error) => {
-        return res.status(500).send('ERROR: bad times getting info from ' + key)
-      })
-  })
+  isAddressAndContentPaired(address, contentId)
+    .then((addressFound) => {
+      if (!addressFound) {
+        const newKey = newKeypair(contentId)
+        return res.status(402).json(sendPrompt(newKey))
+      }
+
+      return blockchainApi.lookup(address)
+        .then((body) => {
+          if (isPaid(body)) {
+            markAsPaid(address)
+            res.status(200).send(fetchContent(contentId))
+          } else {
+            console.log('not paid')
+            res.status(402).json(sendPrompt(address))
+          }
+        })
+        .catch((error) => {
+          console.log('ERROR: ', error)
+          return res.status(500).send(
+            'ERROR: bad times getting info from ' + address
+          )
+        })
+    })
+    .catch((error) => {
+      console.log('ERROR: ', error)
+      return res.status(500).send(
+        'ERROR: bad times looking up ', address, contentId
+      )
+    })
 })
 
 const port = 3000
@@ -39,49 +60,47 @@ app.listen(port, function () {
   console.log('server on', port, "😎")
 })
 
-function newPublicKey (contentId) {
+function newKeypair (contentId) {
   // generate a keypair
   const keypair = bitcoin.ECPair.makeRandom()
-  const publicKey = keypair.getAddress()
+  const address = keypair.getAddress()
   const privateKey = keypair.toWIF()
 
   saveKeyPair({
     contentId,
-    publicKey,
+    address,
     privateKey
   })
 
-  return publicKey
+  return address
 }
 
 // helper for data fetch
-
-// TODO: should this be in the api?
 function isPaid (data) {
   if (data === 'Input too short' || data === 'Checksum does not validate') {
     return false
   }
   const price = 1
-  const isPaid = JSON.parse(data).total_received > price
+  const isPaid = data.total_received > price
   return isPaid
 }
 
 // Data persistence
 const saveKeyPair = (data) => {
-  redisDb.set(data.publicKey, JSON.stringify({
+  redisDb.set(data.address, JSON.stringify({
     contentId: data.contentId,
-    publicKey: data.publicKey,
+    address: data.address,
     privateKey: data.privateKey
   }))
 }
 
-function isKeyAndContentPaired (publicKey, contentId) {
+function isAddressAndContentPaired (address, contentId) {
   // todo: moar validations
-  // if (publicKey.length < 34)
-  // if (publicKey[0] !== 1)
+  // if (address.length < 34)
+  // if (address[0] !== 1)
 
   return new Promise((resolve, reject) => {
-    redisDb.get(publicKey, (err, data) => {
+    redisDb.get(address, (err, data) => {
       if (err) reject(err)
       const parsedData = JSON.parse(data)
       resolve(!!parsedData && (parsedData.contentId === contentId))
@@ -89,15 +108,15 @@ function isKeyAndContentPaired (publicKey, contentId) {
   })
 }
 
-function markAsPaid(key) {
+function markAsPaid(address) {
   return new Promise((resolve, reject) => {
-    redisDb.get(key, (err, data) => {
+    redisDb.get(address, (err, data) => {
       if(err) reject(err)
       const parsedData = JSON.parse(data)
       if(!parsedData.paymentTimestamp) {
         updateData = parsedData
         updateData.paymentTimestamp = Date.now()
-        redisDb.set(key, JSON.parse(updateData))
+        redisDb.set(address, JSON.parse(updateData))
       }
     })
   })
@@ -107,9 +126,9 @@ function fetchContent (contentId) {
   return require('../config/content-database.js')[contentId]
 }
 
-function sendPrompt (key) {
+function sendPrompt (address) {
   return {
     display: 'payment.prompt',
-    key: key
+    address: address
   }
 }

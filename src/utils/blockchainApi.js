@@ -15,18 +15,17 @@ function lookup (address) {
   })
 }
 
-function broadcastTransaction(transactionHex) {
+function broadcastTransaction (transactionHex) {
   return new Promise((resolve, reject) => {
     request.post({
       url: 'https://blockchain.info/pushtx',
       form: { tx: transactionHex }
     }, (err, res, body) => {
-      if(err) { reject(err) }
+      if (err) { reject(err) }
       resolve(body)
     })
   })
 }
-
 
 module.exports = {
   broadcastTransaction: broadcastTransaction,

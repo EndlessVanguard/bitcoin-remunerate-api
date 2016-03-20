@@ -14,14 +14,14 @@ function addressesPaidWithinTimeRange (contentId, paymentList, startTimestamp, s
 function fetchContentAddresses (startTimestamp, stopTimestamp, contentId) {
   const redisDb = require('../config/redis')
   return new Promise((resolve, reject) => {
-    redisDb.get('*', (err, data) => {
+    redisDb.keys('*', (err, data) => { // TODO this is blocking, and you need to REPENT! ✞
       if (err) reject(err)
       resolve(data)
     })
   })
 }
 
-function calculateFee(total) {
+function calculateFee (total) {
   // TODO: is 1% a fair way to calculate the miner's fee?
   return {
     payout: (total * 0.9),
@@ -30,12 +30,11 @@ function calculateFee(total) {
   }
 }
 
-function buildTransaction(inputsList, payoutAddress, serviceAddress) {
+function buildTransaction (inputsList, payoutAddress, serviceAddress) {
   const bitcoin = require('bitcoinjs-lib')
   var tx = new bitcoin.TransactionBuilder()
 
   inputsList.forEach((input, index) => {
-    var keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
     tx.addInput(input.lastTransaction, index)
   })
 
@@ -54,12 +53,13 @@ function buildTransaction(inputsList, payoutAddress, serviceAddress) {
 }
 
 function payoutContent (startTimestamp, stopTimestamp, contentId) {
-  const blockchainApi = require('./blockchainApi')
-
   const date = { lastweek: Date.now() - 1 } // TODO(ms): make one week later
   return fetchContentAddresses(date.lastweek, Date.now(), 'my-cool-shit')
     .then((payments) => {
-      const inputList = addressesPaidWithinTimeRange(contentId, payments, startTimestamp, stopTimestamp)
+      // const blockchainApi = require('./blockchainApi')
+
+      // const inputList = addressesPaidWithinTimeRange(contentId, payments, startTimestamp, stopTimestamp)
+      // HERE remember to filter such that the total amount to pay out is greater than 0.1 bitcoin
       // const payoutAddress = getPayoutAddress(contentId)
       // const serviceAddress = getServiceAddress()
       // return bitcoinApi.broadcastTransaction(

@@ -35,7 +35,7 @@ test('transaction.addressesPaidWithinTimeRange', (t) => {
 })
 
 test('transaction.calculateFee', (t) => {
-  const mockTotal = 100;
+  const mockTotal = 100
 
   const actual = transaction.calculateFee(mockTotal)
   const expected = {
