@@ -19,17 +19,17 @@ app.get('/:contentId', function (req, res) {
       return res.status(402).json(sendPrompt(newKey))
     }
 
-    request(blockchainKeyLookupUrl(key), function (error, response, body) {
-      if (error) {
-        return res.status(500).send('ERROR: bad times getting info from ' + blockchainKeyLookupUrl(key))
-      }
-
+    return blockchainApi.lookup(key)
+    .then((body) => {
       if (isPaid(body)) {
         markAsPaid(key)
         res.status(200).send(fetchContent(contentId))
       } else {
         res.status(402).json(sendPrompt(key))
       }
+    })
+    .catch(() => {
+      return res.status(500).send('ERROR: bad times getting info from ' + blockchainKeyLookupUrl(key))
     })
   })
 })
@@ -38,12 +38,6 @@ const port = 3000
 app.listen(port, function () {
   console.log('server on', port, "😎")
 })
-
-// bitcoin helper
-
-function blockchainKeyLookupUrl (key) {
-  return 'https://blockchain.info/rawaddr/' + key
-}
 
 function newPublicKey (contentId) {
   // generate a keypair

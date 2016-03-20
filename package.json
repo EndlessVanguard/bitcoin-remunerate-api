@@ -6,7 +6,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "npm-watch": "^0.1.1",
+    "nodemon": "^1.9.1",
     "parallelshell": "^2.0.0",
     "standard": "^6.0.8",
     "tape": "^4.5.1"
@@ -19,14 +19,12 @@
     "request": "^2.69.0"
   },
   "scripts": {
-    "start": "standard ./src/**/* && node src/index.js",
-    "devserver": "npm run lint && parallelshell 'redis-server ./config/redis.conf' 'node src/index.js'",
+    "start": "node src/index.js",
+    "devserver": "npm run lint && parallelshell 'npm run start-redis' 'npm run start'",
+    "devserver-watch": "nodemon -I -q -x 'npm run devserver' -w 'src/'",
     "lint": "standard ./src/**/*",
     "test": "tape src/**/*.spec.js",
-    "watch": "npm-watch"
-  },
-  "watch": {
-    "devserver": "src/**/*.js",
-    "test": "src/**/*.js"
+    "test-watch": "nodemon -I -q -x 'npm run test' -w 'src/'",
+    "start-redis": "redis-server ./config/redis.conf"
   }
 }
