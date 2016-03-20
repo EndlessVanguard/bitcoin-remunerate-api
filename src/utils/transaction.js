@@ -1,17 +1,17 @@
-function addressesPaidWithinTimeRange (contentId, paymentList, startTimestamp, stopTimestamp) {
+function addressesPaidWithinTimeRange (contentId, query, paymentList) {
   // function that returns a list of all pubkeys successfully paid inbetween startTimestamp & stopTimestamp
   return paymentList.filter((record) => {
     if (record.contentId === contentId) { return true }
 
     if (record.payment) {
-      return record.payment.timestamp > startTimestamp &&
-             record.payment.timestamp < stopTimestamp
+      return record.payment.timestamp > query.startTimestamp &&
+             record.payment.timestamp < query.stopTimestamp
     }
     return false
   })
 }
 
-function fetchContentAddresses (startTimestamp, stopTimestamp, contentId) {
+function fetchContentAddresses (contentId, query) {
   const redisDb = require('../config/redis')
   return new Promise((resolve, reject) => {
     redisDb.keys('*', (err, data) => { // TODO this is blocking, and you need to REPENT! ✞
@@ -19,6 +19,16 @@ function fetchContentAddresses (startTimestamp, stopTimestamp, contentId) {
       resolve(data)
     })
   })
+}
+
+function fetchContentPayoutAddress (contentId) {
+  const contentDb = require('config/content-database')
+  return contentDb[contentId]
+}
+
+function fetchServiceAddress () {
+  // TODO: we should calculate a new keypair, track it, and respond ꙲
+  return '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
 }
 
 function calculateFee (total) {
@@ -30,8 +40,11 @@ function calculateFee (total) {
   }
 }
 
-function buildTransaction (inputsList, payoutAddress, serviceAddress) {
+function buildTransaction (transactionInfo) {
   const bitcoin = require('bitcoinjs-lib')
+  const inputsList = transactionInfo.inputsList
+  const payoutAddress = transactionInfo.payoutAddress
+  const serviceAddress = transactionInfo.serviceAddress
   var tx = new bitcoin.TransactionBuilder()
 
   inputsList.forEach((input, index) => {
@@ -52,20 +65,31 @@ function buildTransaction (inputsList, payoutAddress, serviceAddress) {
   return tx.build().toHex()
 }
 
-function payoutContent (startTimestamp, stopTimestamp, contentId) {
-  const date = { lastweek: Date.now() - 1 } // TODO(ms): make one week later
-  return fetchContentAddresses(date.lastweek, Date.now(), 'my-cool-shit')
-    .then((payments) => {
-      // const blockchainApi = require('./blockchainApi')
-
-      // const inputList = addressesPaidWithinTimeRange(contentId, payments, startTimestamp, stopTimestamp)
-      // HERE remember to filter such that the total amount to pay out is greater than 0.1 bitcoin
-      // const payoutAddress = getPayoutAddress(contentId)
-      // const serviceAddress = getServiceAddress()
-      // return bitcoinApi.broadcastTransaction(
-      //    buildTransaction(inputsList, payoutAddress, serviceAddress)
-      //  )
+function payoutContent (contentId) {
+  const moment = require('moment')
+  const blockchainApi = require('./blockchainApi')
+  const query = {
+    // TODO: how to get moment to spit out a ISO
+    startTimestamp: parseInt(moment().subtract(1, 'week').startOf('week') + '', 10),
+    stopTimestamp: Date.now()
+  }
+  return fetchContentAddresses(contentId, query)
+    .then(() => {
+      return Promise.all(
+        addressesPaidWithinTimeRange.bind(null, contentId, query),
+        fetchContentPayoutAddress(contentId),
+        fetchServiceAddress()
+      )
     })
+    .then((data) => {
+      return {
+        inputsList: data[0],
+        contentAddress: data[1],
+        serviceAddress: data[2]
+      }
+    })
+    .then(buildTransaction)
+    .then(blockchainApi.broadcastTransaction)
 }
 
 module.exports = {
