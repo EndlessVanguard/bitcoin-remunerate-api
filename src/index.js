@@ -20,17 +20,17 @@ app.get('/:contentId', function (req, res) {
     }
 
     return blockchainApi.lookup(key)
-    .then((body) => {
-      if (isPaid(body)) {
-        markAsPaid(key)
-        res.status(200).send(fetchContent(contentId))
-      } else {
-        res.status(402).json(sendPrompt(key))
-      }
-    })
-    .catch(() => {
-      return res.status(500).send('ERROR: bad times getting info from ' + blockchainKeyLookupUrl(key))
-    })
+      .then((body) => {
+        if (isPaid(body)) {
+          markAsPaid(key)
+          res.status(200).send(fetchContent(contentId))
+        } else {
+          res.status(402).json(sendPrompt(key))
+        }
+      })
+      .catch((error) => {
+        return res.status(500).send('ERROR: bad times getting info from ' + key)
+      })
   })
 })
 
@@ -55,6 +55,8 @@ function newPublicKey (contentId) {
 }
 
 // helper for data fetch
+
+// TODO: should this be in the api?
 function isPaid (data) {
   if (data === 'Input too short' || data === 'Checksum does not validate') {
     return false

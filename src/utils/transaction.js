@@ -53,29 +53,24 @@ function buildTransaction(inputsList, payoutAddress, serviceAddress) {
   return tx.build().toHex()
 }
 
-function broadcastTransaction(transactionHex) {
-  const request = require('request')
-  return new Promise((resolve, reject) => {
-    request.post({
-      url: 'https://blockchain.info/pushtx',
-      form: { tx: transactionHex }
-    }, (err, res, body) => {
-      if(err) { reject(err) }
-      resolve(body)
-    })
-  })
-}
-
 function payoutContent (startTimestamp, stopTimestamp, contentId) {
+  const blockchainApi = require('./blockchainApi')
+
   const date = { lastweek: Date.now() - 1 } // TODO(ms): make one week later
   return fetchContentAddresses(date.lastweek, Date.now(), 'my-cool-shit')
-    .then((payments) => addressesPaidWithinTimeRange(contentId, payments, startTimestamp, stopTimestamp))
+    .then((payments) => {
+      const inputList = addressesPaidWithinTimeRange(contentId, payments, startTimestamp, stopTimestamp)
+      // const payoutAddress = getPayoutAddress(contentId)
+      // const serviceAddress = getServiceAddress()
+      // return bitcoinApi.broadcastTransaction(
+      //    buildTransaction(inputsList, payoutAddress, serviceAddress)
+      //  )
+    })
 }
 
 module.exports = {
   addressesPaidWithinTimeRange: addressesPaidWithinTimeRange,
   buildTransaction: buildTransaction,
-  broadcastTransaction: broadcastTransaction,
   calculateFee: calculateFee,
   payoutContent: payoutContent
 }
