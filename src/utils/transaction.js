@@ -14,7 +14,7 @@ const fetch = {
   },
   serviceAddress: () => {
     // TODO: we should calculate a new keypair, track it, and respond ꙲
-    return 'MY-KEY'
+    return '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
   }
 }
 
