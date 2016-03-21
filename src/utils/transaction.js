@@ -1,3 +1,23 @@
+const fetch = {
+  contentAddresses: (contentId, query) => {
+    const redisDb = require('../config/redis')
+    return new Promise((resolve, reject) => {
+      redisDb.keys('*', (err, data) => { // TODO this is blocking, and you need to REPENT! ✞
+        if (err) reject(err)
+        resolve(data)
+      })
+    })
+  },
+  contentPayoutAddress: (contentId) => {
+    const contentDb = require('config/content-database')
+    return contentDb[contentId]
+  },
+  serviceAddress: () => {
+    // TODO: we should calculate a new keypair, track it, and respond ꙲
+    return 'MY-KEY'
+  }
+}
+
 function addressesPaidWithinTimeRange (contentId, query, paymentList) {
   // function that returns a list of all pubkeys successfully paid inbetween startTimestamp & stopTimestamp
   return paymentList.filter((record) => {
@@ -9,26 +29,6 @@ function addressesPaidWithinTimeRange (contentId, query, paymentList) {
     }
     return false
   })
-}
-
-function fetchContentAddresses (contentId, query) {
-  const redisDb = require('../config/redis')
-  return new Promise((resolve, reject) => {
-    redisDb.keys('*', (err, data) => { // TODO this is blocking, and you need to REPENT! ✞
-      if (err) reject(err)
-      resolve(data)
-    })
-  })
-}
-
-function fetchContentPayoutAddress (contentId) {
-  const contentDb = require('config/content-database')
-  return contentDb[contentId]
-}
-
-function fetchServiceAddress () {
-  // TODO: we should calculate a new keypair, track it, and respond ꙲
-  return '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
 }
 
 function calculateFee (total) {
@@ -73,12 +73,12 @@ function payoutContent (contentId) {
     startTimestamp: parseInt(moment().subtract(1, 'week').startOf('week') + '', 10),
     stopTimestamp: Date.now()
   }
-  return fetchContentAddresses(contentId, query)
+  return fetch.contentAddresses(contentId, query)
     .then(() => {
       return Promise.all(
         addressesPaidWithinTimeRange.bind(null, contentId, query),
-        fetchContentPayoutAddress(contentId),
-        fetchServiceAddress()
+        fetch.contentPayoutAddress(contentId),
+        fetch.serviceAddress()
       )
     })
     .then((data) => {
