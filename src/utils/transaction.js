@@ -1,3 +1,4 @@
+const isArray = require('lodash/isArray')
 const fetch = {
   contentAddresses: (contentId) => {
     const redisDb = require('../config/redis')
@@ -8,7 +9,8 @@ const fetch = {
       })
     })
   },
-  getLastTransactionId: (bitcoinPrivateKeyWIF) => {
+  getLastTransactionId: (inputData, callback) => {
+    var bitcoinPrivateKeyWIF = inputData.privateKey
     const blockchainApi = require('./blockchainApi')
     const bitcoin = require('bitcoinjs-lib')
     const address = bitcoin.ECPair.fromWIF(bitcoinPrivateKeyWIF).getAddress()
@@ -16,8 +18,10 @@ const fetch = {
 
     return blockchainApi.lookup(address)
     .then((addressInfo) => {
-      console.log(addressInfo.txs)
-      return addressInfo
+      callback(null, addressInfo)
+    })
+    .catch((err) => {
+      callback(err, null)
     })
   },
   getInput: (bitcoinAddress) => {
@@ -125,6 +129,7 @@ function isValidInput (inputObj) {
   if (!('lastTransaction' in inputObj)) { return false }
   return true
 }
+const async = require('async')
 function payoutContent (contentId) {
   // side effecty. Pays out all outstanding balances we owe to contentId
   const blockchainApi = require('./blockchainApi')
@@ -139,15 +144,32 @@ function payoutContent (contentId) {
   // serviceAddress: '1G5Sf35VL4aEc8TBb16467eNaq61E4GVfB'
   return fetch.inputsList(contentId)
   .then((inputsList) => {
-    return Promise.all(
-      inputsList.map((input, index) => {
-        return fetch.getLastTransactionId(input.privateKey)
+    return new Promise((resolve, reject) => {
+      async.mapLimit(inputsList, 5, fetch.getLastTransactionId, (err, transactionInfo) => {
+        if (!err) {
+          resolve(
+            transactionInfo.map((txInfo) => {
+              return JSON.parse(txInfo.body)
+            })
+          )
+        } else {
+          reject(transactionInfo)
+          console.log('err!')
+        }
       })
-    ).then((data) => {
-      console.log('pmap done', data)
-      return data.filter((val) => {
-        console.log('val', val)
-      })
+    }).then((listOfTxInfo) => {
+      // TODO merge the results of getLastTransactionId with inputsList
+      console.log(
+        inputsList.map((input, index) => {
+          if (listOfTxInfo[index].n_tx < 1) { return false }
+        })
+      , 'yo')
+      console.log(listOfTxInfo[0], inputsList[0])
+      console.log('listOfTxInfo')
+    })
+    .then((inputsList) => {
+      console.assert(isArray(inputsList))
+      inputsList.forEach((inputData) => console.assert(isValidInput(inputData)))
     })
   })
   .then((inputsList) => {

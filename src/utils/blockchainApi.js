@@ -10,10 +10,7 @@ function lookup (address) {
       url: blockchainAddressLookupUrl(address)
     }, (error, response, body) => {
       if (!error) {
-        console.log('error', error)
-        console.log('response', response)
-        console.log('body', body)
-        // resolve()
+        resolve(response)
       } else {
         console.log('error!', error, response)
         reject(error)
