@@ -2,14 +2,21 @@
 const transaction = require("../src/utils/transaction")
 
 function payoutContent (contentId){
-  return transaction.payoutContent(contentId).then((result) => {
-    console.log(result)
-  })
+  console.log('payout', contentId)
+  return transaction.payoutContent(contentId)
 }
 
 process.argv.forEach((val, index, array) => {
-  payoutContent(val).then(result => console.log(result))
+  if (index < 2) {
+    return false
+  }
+  payoutContent(val)
+  .then(result => {
+    console.log('result', result)
+    process.exit(0)
+  })
   .catch((err) => {
-    console.log(err)
+    console.log('script err: ', err)
+    process.exit(1)
   })
 })

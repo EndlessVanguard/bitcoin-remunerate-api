@@ -1,4 +1,7 @@
+const isString = require('lodash/isString')
 const isArray = require('lodash/isArray')
+const isObject = require('lodash/isObject')
+
 const fetch = {
   contentAddresses: (contentId) => {
     const redisDb = require('../config/redis')
@@ -17,12 +20,8 @@ const fetch = {
     bitcoinPrivateKeyWIF = undefined
 
     return blockchainApi.lookup(address)
-    .then((addressInfo) => {
-      callback(null, addressInfo)
-    })
-    .catch((err) => {
-      callback(err, null)
-    })
+    .then((addressInfo) => callback(null, addressInfo))
+    .catch((err) => callback(err, null))
   },
   getInput: (bitcoinAddress) => {
     const redisDb = require('../config/redis')
@@ -46,9 +45,9 @@ const fetch = {
   },
   contentPayoutAddress: (contentId) => {
     const contentDb = require('../../config/content-database')
-    const address = contentDb[contentId]
-
-    return address
+    if ('payoutAddress' in contentDb[contentId]) {
+      return contentDb[contentId].payoutAddress
+    }
   },
   serviceAddress: () => {
     // TODO: we should calculate a new keypair, track it, and respond ꙲
@@ -56,8 +55,7 @@ const fetch = {
   }
 }
 
-const isObject = require('lodash/isObject')
-function addressesPaidWithinTimeRange (contentId, timestamps, paymentList) {
+function addressesPaidWithinTimeRange (contentId, timestamps, inputsList) {
   // Return inputsList, to be passed to buildTransaction
   // inputsList is an array of objects
   // {
@@ -66,9 +64,9 @@ function addressesPaidWithinTimeRange (contentId, timestamps, paymentList) {
   //    privateKey: The private key for this address,
   // }
   // TODO refactor this to only be the callback.
-  // Someone else can do the paymentList.filter
+  // Someone else can do the inputsList.filter
   // Instead this function now has 2 purposes
-  const returnValue = paymentList.filter((record) => {
+  return inputsList.filter((record) => {
     console.assert(
       isObject(record),
       'TypeError: expected Object, got ' + (typeof record)
@@ -82,7 +80,6 @@ function addressesPaidWithinTimeRange (contentId, timestamps, paymentList) {
     }
     return false
   })
-  return returnValue
 }
 
 function calculateFee (total) {
@@ -100,9 +97,8 @@ function buildTransaction (transactionInfo) {
   const payoutAddress = transactionInfo.payoutAddress
   const serviceAddress = transactionInfo.serviceAddress
   var tx = new bitcoin.TransactionBuilder()
-
-  const isArray = require('lodash/isArray')
   console.assert(isArray(inputsList), 'TypeError: inputsList not an Array')
+  console.assert(isString(payoutAddress) && isString(serviceAddress))
   inputsList.forEach((input, index) => {
     tx.addInput(input.lastTransaction, index)
   })
@@ -111,8 +107,12 @@ function buildTransaction (transactionInfo) {
     inputsList.reduce((sum, x) => sum + x.finalBalance, 0)
   )
 
-  tx.addOutput(payoutAddress, amount.payout)
-  tx.addOutput(serviceAddress, amount.service)
+  if (amount.payout > 0) {
+    tx.addOutput(payoutAddress, amount.payout)
+  }
+  if (amount.service > 0) {
+    tx.addOutput(serviceAddress, amount.service)
+  }
 
   inputsList.forEach((input, index) => {
     var keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
@@ -120,8 +120,8 @@ function buildTransaction (transactionInfo) {
   })
   return tx.build().toHex()
 }
+
 function isValidInput (inputObj) {
-  const isObject = require('lodash/isObject')
   if (!isObject(inputObj)) { return false }
   // type test of transaction input
   if (!('finalBalance' in inputObj)) { return false }
@@ -129,101 +129,58 @@ function isValidInput (inputObj) {
   if (!('lastTransaction' in inputObj)) { return false }
   return true
 }
-const async = require('async')
+
+function addBlockchainInformationToInputs (inputsList) {
+  const async = require('async')
+  // Fetch and merge all TX data we need as input in our transactions
+  return new Promise((resolve, reject) => {
+    async.mapLimit(inputsList, 5, fetch.getLastTransactionId, (err, transactionInfo) => {
+      if (!err) {
+        resolve(
+          transactionInfo.map((txInfo) => {
+            return JSON.parse(txInfo.body)
+          })
+        )
+      } else {
+        reject(transactionInfo)
+        console.log('err!')
+      }
+    })
+  }).then((listOfTxInfo) => {
+    // Merge the results of getLastTransactionId with inputsList
+    return inputsList.map((input, index) => {
+      if ('paymentTimestamp' in input) {
+        var newInput = input
+        newInput.finalBalance = listOfTxInfo[index].final_balance
+        // TODO make sure txs[0] is the newest, not oldest
+        newInput.lastTransaction = listOfTxInfo[index].txs[0].hash
+        console.assert(isValidInput(newInput))
+
+        return newInput
+      } else { return false }
+    })
+  })
+}
+
 function payoutContent (contentId) {
   // side effecty. Pays out all outstanding balances we owe to contentId
   const blockchainApi = require('./blockchainApi')
-  // inputsList: [
-  //   {
-  //     privateKey: 'L1dHE6RmNw345p2wy5m6dzyULAzqM96HdeHrfAKgU5sLYrNYpup9',
-  //     finalBalance: 100000,
-  //     lastTransaction: '8a94cc11ea5f432aa53919c049ec4beaac0f663ffe239c2f5f33406484d10407'
-  //   }
-  // ],
-  // payoutAddress: '12Lk2zCSFpUGsuXxHigNgwvqvaYJQzpyWd',
-  // serviceAddress: '1G5Sf35VL4aEc8TBb16467eNaq61E4GVfB'
   return fetch.inputsList(contentId)
+  .then(addBlockchainInformationToInputs)
   .then((inputsList) => {
-    return new Promise((resolve, reject) => {
-      async.mapLimit(inputsList, 5, fetch.getLastTransactionId, (err, transactionInfo) => {
-        if (!err) {
-          resolve(
-            transactionInfo.map((txInfo) => {
-              return JSON.parse(txInfo.body)
-            })
-          )
-        } else {
-          reject(transactionInfo)
-          console.log('err!')
-        }
-      })
-    }).then((listOfTxInfo) => {
-      // TODO merge the results of getLastTransactionId with inputsList
-      console.log(
-        inputsList.map((input, index) => {
-          if (listOfTxInfo[index].n_tx < 1) { return false }
-        })
-      , 'yo')
-      console.log(listOfTxInfo[0], inputsList[0])
-      console.log('listOfTxInfo')
-    })
-    .then((inputsList) => {
-      console.assert(isArray(inputsList))
-      inputsList.forEach((inputData) => console.assert(isValidInput(inputData)))
-    })
-  })
-  .then((inputsList) => {
-    console.log('allData', inputsList)
-    inputsList.forEach((input, index) => {
-      console.assert(
-        isValidInput(input),
-        'TypeError: inputsList contains invalid inputs'
-      )
-    })
-
     return {
       inputsList: inputsList,
-      payoutAddress: fetch.contentPayoutAddress(),
+      payoutAddress: fetch.contentPayoutAddress(contentId),
       serviceAddress: fetch.serviceAddress()
     }
   })
-  // Done generating inputsList
   .then(buildTransaction)
   .then(blockchainApi.broadcastTransaction)
+  .then((result) => {
+    console.log('Message from blockchain.info:', result)
+    return result
+  })
 }
-
-// function payoutContent (contentId) {
-//   const moment = require('moment')
-//   const blockchainApi = require('./blockchainApi')
-//   const timestamps = {
-//     // TODO: how to get moment to spit out a ISO
-//     startTimestamp: parseInt(moment().subtract(1, 'week').startOf('week') + '', 10),
-//     stopTimestamp: Date.now()
-//   }
-//   return fetch.contentAddresses(contentId, timestamps)
-//     .then((unfilteredInputsList) => {
-//       // console.log('unfilteredInputsList', unfilteredInputsList)
-//       const addressesList = addressesPaidWithinTimeRange(contentId, timestamps, unfilteredInputsList)
-//       // console.log('addressesList', addressesList)
-//
-//       return Promise.all([
-//         // TODO define paymentList
-//         instaPromise(addressesList),
-//         instaPromise(fetch.contentPayoutAddress(contentId)),
-//         instaPromise(fetch.serviceAddress())
-//       ])
-//     })
-//     .then((data) => {
-//       // console.log('then data[0]', data[0])
-//       return {
-//         inputsList: data[0],
-//         contentAddress: data[1],
-//         serviceAddress: data[2]
-//       }
-//     })
-//     .then(buildTransaction)
-//     .then(blockchainApi.broadcastTransaction)
-// }
 
 module.exports = {
   addressesPaidWithinTimeRange: addressesPaidWithinTimeRange,

@@ -31,7 +31,8 @@ app.get('/:contentId', function (req, res) {
       }
 
       return blockchainApi.lookup(address)
-        .then((body) => {
+        .then((rawAddressInformation) => {
+          const body = JSON.parse(rawAddressInformation.body)
           if (isPaid(body)) {
             markAsPaid(address)
             res.status(200).send(fetchContent(contentId))
