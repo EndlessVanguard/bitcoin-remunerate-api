@@ -8,14 +8,22 @@ function lookup (address) {
   return new Promise((resolve, reject) => {
     request.get({
       url: blockchainAddressLookupUrl(address)
-    }, function (error, response, body) {
-      if (error) { reject(error) }
-      resolve(JSON.parse(body))
+    }, (error, response, body) => {
+      if (!error) {
+        console.log('error', error)
+        console.log('response', response)
+        console.log('body', body)
+        // resolve()
+      } else {
+        console.log('error!', error, response)
+        reject(error)
+      }
     })
   })
 }
 
 function broadcastTransaction (transactionHex) {
+  console.log('broadcasting', transactionHex)
   return new Promise((resolve, reject) => {
     request.post({
       url: 'https://blockchain.info/pushtx',

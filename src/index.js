@@ -57,7 +57,7 @@ app.get('/:contentId', function (req, res) {
 
 const port = 3000
 app.listen(port, function () {
-  console.log('server on', port, "😎")
+  console.log('server on', port, '😎')
 })
 
 function newKeypair (contentId) {
@@ -114,9 +114,10 @@ function markAsPaid(address) {
       if(err) reject(err)
       const parsedData = JSON.parse(data)
       if(!parsedData.paymentTimestamp) {
-        updateData = parsedData
-        updateData.paymentTimestamp = Date.now()
-        redisDb.set(address, JSON.parse(updateData))
+        updatedData = parsedData
+        updatedData.paymentTimestamp = Date.now()
+        console.log(updatedData)
+        redisDb.set(address, JSON.stringify(updatedData))
       }
     })
   })

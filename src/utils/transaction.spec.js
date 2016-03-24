@@ -2,6 +2,33 @@ const test = require('tape')
 
 const transaction = require('./transaction')
 
+test('transaction.isValidInput', (t) => {
+  const validInput = {
+    privateKey: 'L1dHE6RmNw345p2wy5m6dzyULAzqM96HdeHrfAKgU5sLYrNYpup9',
+    finalBalance: 100000,
+    lastTransaction: '8a94cc11ea5f432aa53919c049ec4beaac0f663ffe239c2f5f33406484d10407'
+  }
+  const invalidInputs = [
+    {
+      finalBalance: 100000,
+      lastTransaction: '8a94cc11ea5f432aa53919c049ec4beaac0f663ffe239c2f5f33406484d10407'
+    },
+    {
+      privateKey: 'L1dHE6RmNw345p2wy5m6dzyULAzqM96HdeHrfAKgU5sLYrNYpup9',
+      finalBalance: 100000
+    },
+    {
+      privateKey: 'L1dHE6RmNw345p2wy5m6dzyULAzqM96HdeHrfAKgU5sLYrNYpup9',
+      lastTransaction: '8a94cc11ea5f432aa53919c049ec4beaac0f663ffe239c2f5f33406484d10407'
+    }
+  ]
+  t.equal(true, transaction.isValidInput(validInput), 'good input is valid')
+  t.equal(false, transaction.isValidInput(invalidInputs[0]), 'input needs private key')
+  t.equal(false, transaction.isValidInput(invalidInputs[1]), 'input needs lastTransaction')
+  t.equal(false, transaction.isValidInput(invalidInputs[2]), 'input needs finalBalance')
+  t.end()
+})
+
 test('transaction.addressesPaidWithinTimeRange', (t) => {
   const mockContentId = '123abc'
   const mockData = [
@@ -27,8 +54,9 @@ test('transaction.addressesPaidWithinTimeRange', (t) => {
     startTimestamp: (Date.now() - 1),
     stopTimestamp: (Date.now() + 1)
   }
+  const filteredInputsList = transaction.addressesPaidWithinTimeRange(mockContentId, query, mockData)
 
-  const actual = transaction.addressesPaidWithinTimeRange(mockContentId, query, mockData).length
+  const actual = filteredInputsList.length
   const exepected = 2
   t.equal(actual, exepected, 'Time range filter works')
   t.end()
