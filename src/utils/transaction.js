@@ -20,8 +20,8 @@ const fetch = {
     bitcoinPrivateKeyWIF = undefined
 
     return blockchainApi.lookup(address)
-    .then((addressInfo) => callback(null, addressInfo))
-    .catch((err) => callback(err, null))
+      .then((addressInfo) => callback(null, addressInfo))
+      .catch((err) => callback(err, null))
   },
   getInput: (bitcoinAddress) => {
     const redisDb = require('../config/redis')
@@ -166,26 +166,24 @@ function payoutContent (contentId) {
   // side effecty. Pays out all outstanding balances we owe to contentId
   const blockchainApi = require('./blockchainApi')
   return fetch.inputsList(contentId)
-  .then(addBlockchainInformationToInputs)
-  .then((inputsList) => {
-    return {
+    .then(addBlockchainInformationToInputs)
+    .then((inputsList) => ({
       inputsList: inputsList,
       payoutAddress: fetch.contentPayoutAddress(contentId),
       serviceAddress: fetch.serviceAddress()
-    }
-  })
-  .then(buildTransaction)
-  .then(blockchainApi.broadcastTransaction)
-  .then((result) => {
-    console.log('Message from blockchain.info:', result)
-    return result
-  })
+    })
+    .then(buildTransaction)
+    .then(blockchainApi.broadcastTransaction)
+    .then((result) => {
+      console.log('Message from blockchain.info:', result)
+      return result
+    })
 }
 
 module.exports = {
   addressesPaidWithinTimeRange: addressesPaidWithinTimeRange,
   buildTransaction: buildTransaction,
   calculateFee: calculateFee,
-  payoutContent: payoutContent,
-  isValidInput: isValidInput
+  isValidInput: isValidInput,
+  payoutContent: payoutContent
 }
