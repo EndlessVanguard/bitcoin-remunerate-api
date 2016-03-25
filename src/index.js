@@ -68,8 +68,8 @@ function newKeypair (contentId) {
   const privateKey = keypair.toWIF()
 
   saveKeyPair({
-    contentId,
     address,
+    contentId,
     privateKey
   })
 
@@ -89,8 +89,8 @@ function isPaid (data) {
 // Data persistence
 const saveKeyPair = (data) => {
   redisDb.set(data.address, JSON.stringify({
-    contentId: data.contentId,
     address: data.address,
+    contentId: data.contentId,
     privateKey: data.privateKey
   }))
 }
