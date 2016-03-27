@@ -1,5 +1,6 @@
-# bitcoin-remunerate
+# bitcoin remunerate api
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
+[![ci-build-status](https://circleci.com/gh/EndlessVanguard/bitcoin-remunerate-api.png?style=shield&circle-token=042ad75f490d7709e331cfda74b9d756202f9cf2)](https://circleci.com/gh/EndlessVanguard/bitcoin-remunerate-api)
 
 
 A scheme for trustless, decentralized, anonymous, remuneration for content creators.
