@@ -123,7 +123,7 @@ function markAsPaid(address) {
 }
 
 function fetchContent (contentId) {
-  return require('../config/content-database.js')[contentId]
+  return require('../config/content-database.js')[contentId].content
 }
 
 function sendPrompt (address) {
