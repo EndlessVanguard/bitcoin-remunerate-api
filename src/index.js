@@ -10,8 +10,8 @@ const redisDb = require('./config/redis')
 
 app.use(cors());
 
-// TODO: there will be an apiToken per client..
-app.get('/:contentId', function (req, res) {
+app.get('/', (req, res) => res.status(200).send('Welcome to momona! Use <code>/0/:contentId</code>'))
+app.get('/0/:contentId', function (req, res) {
   const address = req.query.address
   const contentId = req.params.contentId
 
