@@ -31,7 +31,8 @@ app.get('/:contentId', function (req, res) {
       }
 
       return blockchainApi.lookup(address)
-        .then((body) => {
+        .then((rawAddressInformation) => {
+          const body = JSON.parse(rawAddressInformation.body)
           if (isPaid(body)) {
             markAsPaid(address)
             res.status(200).send(fetchContent(contentId))
@@ -57,7 +58,7 @@ app.get('/:contentId', function (req, res) {
 
 const port = 3000
 app.listen(port, function () {
-  console.log('server on', port, "😎")
+  console.log('server on', port, '😎')
 })
 
 function newKeypair (contentId) {
@@ -114,9 +115,10 @@ function markAsPaid(address) {
       if(err) reject(err)
       const parsedData = JSON.parse(data)
       if(!parsedData.paymentTimestamp) {
-        updateData = parsedData
-        updateData.paymentTimestamp = Date.now()
-        redisDb.set(address, JSON.parse(updateData))
+        updatedData = parsedData
+        updatedData.paymentTimestamp = Date.now()
+        console.log(updatedData)
+        redisDb.set(address, JSON.stringify(updatedData))
       }
     })
   })

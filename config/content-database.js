@@ -5,11 +5,11 @@
 // Key is contentId, value is object of payoutAddress & content <String>
 module.exports = {
   '231-bitcoin-company-frees-us-from-the-terror-of-advertising': {
-    payoutAddress: "1MockAddresSS555",
+    payoutAddress: "19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw",
     content: `<em>No reason to be sad anymore.</em> The new cool company from Silicon Allee Bitcoin Mecca Berlin will save us all from Paypal and make Matt & Martin some kind of Bitcoin Jesuses`
   },
   '9gjd-12-listicles-that-will-have-you-clicking-for-ad-cash': {
-    payoutAddress: "1MockAddresSS555",
+    payoutAddress: "19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw",
     content: `
 <ul>
   <li><a href='http://www.buzzfeed.com/mjs538/the-most-powerful-photos-of-2011'>The 45 Most Powerful Images of 2011</a></li>
@@ -27,7 +27,7 @@ module.exports = {
 </ul>`
   },
   '489353495freiojgreogj.dsfaiocontent!!!': {
-    payoutAddress: "1fj48jfeirhughusgr",
+    payoutAddress: "19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw",
     content: "This is a nice article!!!"
   }
 }
