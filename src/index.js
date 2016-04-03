@@ -6,7 +6,6 @@ const isNil = require('lodash/isNil')
 
 const app = express()
 const blockchainApi = require('./utils/blockchainApi')
-const redisDb = require('./config/redis')
 
 app.use(cors());
 
@@ -62,12 +61,14 @@ app.listen(port, function () {
 })
 
 function newKeypair (contentId) {
+  const Invoice = require('./records/Invoice')
+
   // generate a keypair
   const keypair = bitcoin.ECPair.makeRandom()
   const address = keypair.getAddress()
   const privateKey = keypair.toWIF()
 
-  saveKeyPair({
+  Invoice.save({
     address,
     contentId,
     privateKey
@@ -76,7 +77,15 @@ function newKeypair (contentId) {
   return address
 }
 
+function sendPrompt (address) {
+  return {
+    display: 'payment.prompt',
+    address: address
+  }
+}
+
 // helper for data fetch
+
 function isPaid (data) {
   if (data === 'Input too short' || data === 'Checksum does not validate') {
     return false
@@ -87,50 +96,25 @@ function isPaid (data) {
 }
 
 // Data persistence
-const saveKeyPair = (data) => {
-  redisDb.set(data.address, JSON.stringify({
-    address: data.address,
-    contentId: data.contentId,
-    privateKey: data.privateKey
-  }))
-}
 
 function isAddressAndContentPaired (address, contentId) {
-  // todo: moar validations
-  // if (address.length < 34)
-  // if (address[0] !== 1)
-
-  return new Promise((resolve, reject) => {
-    redisDb.get(address, (err, data) => {
-      if (err) reject(err)
-      const parsedData = JSON.parse(data)
-      resolve(!!parsedData && (parsedData.contentId === contentId))
-    })
-  })
+  return require('./records/Invoice')
+    .find(address)
+    .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))
 }
 
 function markAsPaid(address) {
-  return new Promise((resolve, reject) => {
-    redisDb.get(address, (err, data) => {
-      if(err) reject(err)
-      const parsedData = JSON.parse(data)
-      if(!parsedData.paymentTimestamp) {
-        updatedData = parsedData
-        updatedData.paymentTimestamp = Date.now()
-        console.log(updatedData)
-        redisDb.set(address, JSON.stringify(updatedData))
+  const Invoice = require('./records/Invoice')
+  return Invoice.find(address)
+    .then((invoice) => {
+      if(!invoice.paymentTimestamp) {
+        invoice.paymentTimestamp = Date.now()
+        console.log('mark as paid:', updatedData)
+        Invoice.save(invoice)
       }
     })
-  })
 }
 
 function fetchContent (contentId) {
   return require('../config/content-database.js')[contentId].content
-}
-
-function sendPrompt (address) {
-  return {
-    display: 'payment.prompt',
-    address: address
-  }
 }
