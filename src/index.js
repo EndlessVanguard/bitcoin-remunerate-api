@@ -1,14 +1,11 @@
-const bitcoin = require('bitcoinjs-lib')
-const cors = require('cors')
-const express = require('express')
-const request = require('request')
 const isNil = require('lodash/isNil')
 
-const app = express()
 const blockchainApi = require('./utils/blockchainApi')
-const redisDb = require('./config/redis')
+const Content = require('./records/Content')
+const Invoice = require('./records/Invoice')
 
-app.use(cors());
+const app = require('express')()
+app.use(require('cors')())
 
 app.get('/', (req, res) => res.status(200).send('Welcome to momona! Use <code>/0/:contentId</code>'))
 app.get('/0/:contentId', function (req, res) {
@@ -16,26 +13,26 @@ app.get('/0/:contentId', function (req, res) {
   const contentId = req.params.contentId
 
   if (isNil(address)) {
-    const newKey = newKeypair(contentId)
-    return res.status(402).json(sendPrompt(newKey))
+    const newAddress = Invoice.newKeypair(contentId)
+    return res.status(402).json(sendPrompt(newAddress))
   }
   if (isNil(contentId)) {
     return res.status(400).send('missing contentId. Remember to put something after the /!')
   }
 
-  isAddressAndContentPaired(address, contentId)
+  Invoice.isAddressAndContentPaired(address, contentId)
     .then((addressFound) => {
       if (!addressFound) {
-        const newKey = newKeypair(contentId)
-        return res.status(402).json(sendPrompt(newKey))
+        const newAddress = Invoice.newKeypair(contentId)
+        return res.status(402).json(sendPrompt(newAddress))
       }
 
       return blockchainApi.lookup(address)
         .then((rawAddressInformation) => {
           const body = JSON.parse(rawAddressInformation.body)
           if (isPaid(body)) {
-            markAsPaid(address)
-            res.status(200).send(fetchContent(contentId))
+            Invoice.markAsPaid(address)
+            res.status(200).send(Content.fetchContent(contentId))
           } else {
             console.log('not paid')
             res.status(402).json(sendPrompt(address))
@@ -61,22 +58,15 @@ app.listen(port, function () {
   console.log('server on', port, '😎')
 })
 
-function newKeypair (contentId) {
-  // generate a keypair
-  const keypair = bitcoin.ECPair.makeRandom()
-  const address = keypair.getAddress()
-  const privateKey = keypair.toWIF()
-
-  saveKeyPair({
-    address,
-    contentId,
-    privateKey
-  })
-
-  return address
+function sendPrompt (address) {
+  return {
+    display: 'payment.prompt',
+    address: address
+  }
 }
 
 // helper for data fetch
+
 function isPaid (data) {
   if (data === 'Input too short' || data === 'Checksum does not validate') {
     return false
@@ -84,53 +74,4 @@ function isPaid (data) {
   const price = 1
   const isPaid = data.total_received > price
   return isPaid
-}
-
-// Data persistence
-const saveKeyPair = (data) => {
-  redisDb.set(data.address, JSON.stringify({
-    address: data.address,
-    contentId: data.contentId,
-    privateKey: data.privateKey
-  }))
-}
-
-function isAddressAndContentPaired (address, contentId) {
-  // todo: moar validations
-  // if (address.length < 34)
-  // if (address[0] !== 1)
-
-  return new Promise((resolve, reject) => {
-    redisDb.get(address, (err, data) => {
-      if (err) reject(err)
-      const parsedData = JSON.parse(data)
-      resolve(!!parsedData && (parsedData.contentId === contentId))
-    })
-  })
-}
-
-function markAsPaid(address) {
-  return new Promise((resolve, reject) => {
-    redisDb.get(address, (err, data) => {
-      if(err) reject(err)
-      const parsedData = JSON.parse(data)
-      if(!parsedData.paymentTimestamp) {
-        updatedData = parsedData
-        updatedData.paymentTimestamp = Date.now()
-        console.log(updatedData)
-        redisDb.set(address, JSON.stringify(updatedData))
-      }
-    })
-  })
-}
-
-function fetchContent (contentId) {
-  return require('../config/content-database.js')[contentId].content
-}
-
-function sendPrompt (address) {
-  return {
-    display: 'payment.prompt',
-    address: address
-  }
 }
