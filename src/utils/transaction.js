@@ -3,15 +3,6 @@ const isArray = require('lodash/isArray')
 const isObject = require('lodash/isObject')
 
 const fetch = {
-  contentAddresses: (contentId) => {
-    const redisDb = require('../config/redis')
-    return new Promise((resolve, reject) => {
-      redisDb.keys('*', (err, data) => { // TODO this is blocking, and you need to REPENT! ✞
-        if (err) reject(err)
-        resolve(data)
-      })
-    })
-  },
   getLastTransactionId: (inputData, callback) => {
     var bitcoinPrivateKeyWIF = inputData.privateKey
     const blockchainApi = require('./blockchainApi')
@@ -23,25 +14,14 @@ const fetch = {
       .then((addressInfo) => callback(null, addressInfo))
       .catch((err) => callback(err, null))
   },
-  getInput: (bitcoinAddress) => {
-    const redisDb = require('../config/redis')
-    return new Promise((resolve, reject) => {
-      redisDb.get(bitcoinAddress, (err, data) => {
-        if (err) reject(err)
-        resolve(data)
-      })
-    })
-  },
   inputsList: (contentId) => {
+    const Invoice = require('./records/Invoice')
     // To get inputsList, we need to first fetch all the keys.
     // For each key, we need to fetch redisDb.get for that key
-    return fetch.contentAddresses(contentId).then((addresses) => {
-      return Promise.all(
-        addresses.map((address) => {
-          return fetch.getInput(address).then(JSON.parse)
-        })
-      )
-    })
+    return Invoice.findAll(contentId)
+      .then((addresses) => Promise.all(
+        addresses.map((address) => Invoice.find)
+      ))
   },
   contentPayoutAddress: (contentId) => {
     const contentDb = require('../../config/content-database')
