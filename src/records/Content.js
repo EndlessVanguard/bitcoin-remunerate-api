@@ -1,10 +1,11 @@
 const Predicates = require('utils/Predicates')
+const isString = require('lodash/isString')
 
 const Content = {
   validate: (content) => {
     return (
-      Predicates.String(content.contentId) &&
-      Predicates.String(content.content) &&
+      isString(content.contentId) &&
+      isString(content.content) &&
       Predicates.BitcoinAddress(content.payoutAddress)
     )
   }
