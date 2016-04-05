@@ -1,13 +1,14 @@
-const Types = require('utils/Types')
-const validateRecord = require('utils/validateRecord')
+const Predicates = require('utils/Predicates')
+const isString = require('lodash/isString')
 
 const Content = {
-  properties: {
-    contentId: Types.String,
-    content: Types.String,
-    payoutAddress: Types.BitcoinAddress
-  },
-  validate: validateRecord.bind(null, Content)
+  validate: (content) => {
+    return (
+      isString(content.contentId) &&
+      isString(content.content) &&
+      Predicates.BitcoinAddress(content.payoutAddress)
+    )
+  }
 }
 
 module.exports = Content
