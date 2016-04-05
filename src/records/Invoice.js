@@ -1,16 +1,10 @@
 const redisDb = require('./config/redis')
-const Types = require('utils/Types')
-const validateRecord = require('utils/validateRecord')
+const Predicates = require('utils/Predicates')
+const isNumber = require('lodash/isNumber')
 
 const redisKey = 'content'
 
 const Invoice = {
-  properties: {
-    address: Types.BitcoinAddress,
-    contentId: Types.String,
-    privateKey: Types.BitcoinPrivateKey
-    // optional: paymentTimestamp
-  },
   findAll: () => {
     return new Promise((resolve, reject) => {
       redisDb.hkeys(redisKey, (error, addressList) => {
@@ -36,7 +30,14 @@ const Invoice = {
       privateKey: data.privateKey
     }))
   },
-  validate: validateRecord.bind(null, Invoice)
+  validate: (invoice) => {
+    return (
+      Predicates.BitcoinAddress(invoice.address) &&
+      Predicates.BitcoinPrivateKey(invoice.privateKey) &&
+      Predicates.String(invoice.contentId) &&
+      isNumber(invoice.paymentTimestamp)
+    )
+  }
 }
 
 module.exports = Invoice

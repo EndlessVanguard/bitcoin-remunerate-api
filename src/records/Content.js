@@ -1,13 +1,13 @@
-const Types = require('utils/Types')
-const validateRecord = require('utils/validateRecord')
+const Predicates = require('utils/Predicates')
 
 const Content = {
-  properties: {
-    contentId: Types.String,
-    content: Types.String,
-    payoutAddress: Types.BitcoinAddress
-  },
-  validate: validateRecord.bind(null, Content)
+  validate: (content) => {
+    return (
+      Predicates.String(content.contentId) &&
+      Predicates.String(content.content) &&
+      Predicates.BitcoinAddress(content.payoutAddress)
+    )
+  }
 }
 
 module.exports = Content

@@ -1,6 +1,6 @@
 const isString = require('lodash/isString')
 
-const Types = {
+const Predicates = {
   // string: address of a bitcoin wallet
   BitcoinAddress: (address) => {
     if (!isString(address)) { return 'must be a string' }
@@ -19,4 +19,4 @@ const Types = {
   }
 }
 
-module.exports = Types
+module.exports = Predicates
