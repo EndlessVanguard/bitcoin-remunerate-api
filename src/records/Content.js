@@ -1,5 +1,5 @@
-const properties = (function makeProperties() {
-  const predicates = require('utils/predicates')
+const properties = (function makeProperties () {
+  const predicates = require('../utils/predicates')
   return Object.freeze({
     contentId: predicates.isString,
     content: predicates.isString,
@@ -16,7 +16,7 @@ const Content = {
   // helper
   fetchContent: (contentId) => {
     return Content.find(contentId).content
-  }
+  },
 
   // validation
   isValid: (data) => require('utils/isValid')(properties, data, false),

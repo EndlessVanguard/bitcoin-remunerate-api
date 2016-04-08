@@ -1,11 +1,11 @@
-const properties = (function makeProperties() {
-  const predicates = require('utils/predicates')
+const properties = (function makeProperties () {
+  const predicates = require('../utils/predicates')
   return Object.freeze({
     address: predicates.isBitcoinAddress,
     contentId: predicates.isString,
     privateKey: predicates.isBitcoinPrivateKey
     // optional: paymentTimestamp: predicates.isInteger
-  });
+  })
 }())
 
 const redisKey = 'content'
@@ -42,6 +42,7 @@ const Invoice = {
 
   // helpers
   isAddressAndContentPaired: (address, contentId) => {
+    const isNil = require('lodash/isNil')
     return Invoice.find(address)
       .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))
   },
@@ -49,7 +50,7 @@ const Invoice = {
   markAsPaid: (address) => {
     return Invoice.find(address)
       .then((invoice) => {
-        if(!invoice.paymentTimestamp) {
+        if (!invoice.paymentTimestamp) {
           invoice.paymentTimestamp = Date.now()
           Invoice.save(invoice)
         }
@@ -70,7 +71,7 @@ const Invoice = {
     })
 
     return address
-  }
+  },
 
   // validation
   isValid: (data) => require('utils/isValid')(properties, data, false),

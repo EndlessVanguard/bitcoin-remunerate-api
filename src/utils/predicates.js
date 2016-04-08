@@ -24,7 +24,7 @@ const predicates = {
   // integer: any
   isInteger: (integer, validate) => {
     const isInteger = require('lodash/isInteger')
-    if(!isInteger(integer)) { return validate ? 'must be a Integer' : false }
+    if (!isInteger(integer)) { return validate ? 'must be a Integer' : false }
     return validate ? null : true
   },
 

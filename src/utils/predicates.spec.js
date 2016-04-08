@@ -117,21 +117,21 @@ test('predicates.isBitcoinPrivateKey', (t) => {
     st.test('returns false when not 51 or 52 characters long', (sst) => {
       const input = mockPrivateKey()
 
-      function longCheck() {
+      function longCheck () {
         const longInput = input + 'x'
         const actual = predicates.isBitcoinPrivateKey(longInput, validate)
         const expected = false
         sst.equal(actual, expected, 'input longer than 52 characters')
       }
 
-      function shortCheck() {
+      function shortCheck () {
         const shortInput = '5x'
         const actual = predicates.isBitcoinPrivateKey(shortInput, validate)
         const expected = false
         sst.equal(actual, expected, 'input shorter than 51 characters')
       }
 
-      [longCheck, shortCheck].map(x => x())
+      [longCheck, shortCheck].map((x) => x())
       sst.end()
     })
   })
@@ -166,21 +166,21 @@ test('predicates.isBitcoinPrivateKey', (t) => {
     st.test('returns validation message when not 51 or 52 characters long', (sst) => {
       const input = mockPrivateKey()
 
-      function longCheck() {
+      function longCheck () {
         const longInput = input + 'x'
         const actual = predicates.isBitcoinPrivateKey(longInput, validate)
         const regex = /be 51 or 52 characters/
         sst.assert(regex.test(actual), 'input longer than 52 characters')
       }
 
-      function shortCheck() {
+      function shortCheck () {
         const shortInput = '5x'
         const actual = predicates.isBitcoinPrivateKey(shortInput, validate)
         const regex = /be 51 or 52 characters/
         sst.assert(regex.test(actual), 'input shorter than 51 characters')
       }
 
-      [longCheck, shortCheck].map(x => x())
+      [longCheck, shortCheck].map((x) => x())
       sst.end()
     })
   })
