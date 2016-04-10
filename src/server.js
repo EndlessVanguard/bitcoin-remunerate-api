@@ -1,6 +1,7 @@
 const isNil = require('lodash/isNil')
 
 const blockchainApi = require('utils/blockchainApi')
+const predicates = require('utils/predicates')
 const Content = require('records/Content')
 const Invoice = require('records/Invoice')
 
@@ -9,20 +10,23 @@ app.use(require('cors')())
 
 // index
 app.get('/', (req, res) => (
-  res.status(200).send('Welcome to Momona! Do GET /0/content/:contentId'))
-)
+  res.status(200).send('Welcome to Momona! Do GET /0/content/:contentId')
+))
 
 // api for content
 app.get('/0/content', (req, res) => (
-  res.status(400).json({ message: 'missing contentId. Remember to put something after the /!' }))
-)
-app.get('/0/content/:contentId', function (req, res) {
+  res.status(400).json(sendMessage('missing contentId. Remember to put something after the /!'))
+))
+app.get('/0/content/:contentId', (req, res) => {
   const address = req.query.address
   const contentId = req.params.contentId
 
   if (isNil(address)) {
     const newAddress = Invoice.newKeypair(contentId)
     return res.status(402).json(sendPrompt(newAddress))
+  }
+  if (!predicates.isBitcoinAddress(address)) {
+    return res.status(400).json(sendMessage(predicates.isBitcoinAddress(address, true)))
   }
 
   Invoice.isAddressAndContentPaired(address, contentId)
@@ -63,12 +67,16 @@ const server = app.listen(port, function () {
   console.log('server on', port, '😎')
 })
 
-function sendPrompt (address) {
-  return {
-    display: 'payment.prompt',
-    address: address
-  }
-}
+// helper for response formats
+
+const sendPrompt = (address) => ({
+  display: 'payment.prompt',
+  address: address
+})
+
+const sendMessage = (message) => ({
+  message: message
+})
 
 // helper for data fetch
 
