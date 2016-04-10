@@ -7,7 +7,15 @@ const Invoice = require('records/Invoice')
 const app = require('express')()
 app.use(require('cors')())
 
-app.get('/', (req, res) => res.status(200).send(`Welcome to Momona! Do GET /0/content/:contentId`))
+// index
+app.get('/', (req, res) => (
+  res.status(200).send('Welcome to Momona! Do GET /0/content/:contentId'))
+)
+
+// api for content
+app.get('/0/content', (req, res) => (
+  res.status(400).json({ message: 'missing contentId. Remember to put something after the /!' }))
+)
 app.get('/0/content/:contentId', function (req, res) {
   const address = req.query.address
   const contentId = req.params.contentId
@@ -15,9 +23,6 @@ app.get('/0/content/:contentId', function (req, res) {
   if (isNil(address)) {
     const newAddress = Invoice.newKeypair(contentId)
     return res.status(402).json(sendPrompt(newAddress))
-  }
-  if (isNil(contentId)) {
-    return res.status(400).send('missing contentId. Remember to put something after the /!')
   }
 
   Invoice.isAddressAndContentPaired(address, contentId)
