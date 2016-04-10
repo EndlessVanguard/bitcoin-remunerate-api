@@ -3,16 +3,11 @@ const test = require('tape')
 const predicates = require('./predicates')
 
 test('predicates.isBitcoinAddress', (t) => {
-  const mockAddress = () => {
-    const times = require('lodash/times')
-    return ('1' + times(33, () => 'x').join(''))
-  }
-
   t.test('reportError flag false', (st) => {
     const reportError = false
 
     st.test('returns true when BitcoinAddress', (sst) => {
-      const input = mockAddress()
+      const input = require('test/helper').mockAddress()
       const actual = predicates.isBitcoinAddress(input, reportError)
       const expected = true
       sst.equals(actual, expected, 'input is BitcoinAddress')
@@ -36,7 +31,7 @@ test('predicates.isBitcoinAddress', (t) => {
     })
 
     st.test('returns false when not 34 characters long', (sst) => {
-      const badInput = mockAddress() + 'x'
+      const badInput = require('test/helper').mockAddress() + 'x'
       const actual = predicates.isBitcoinAddress(badInput, reportError)
       const expected = false
       sst.equal(actual, expected, 'input less than 50 chars long')
@@ -48,7 +43,7 @@ test('predicates.isBitcoinAddress', (t) => {
     const reportError = true
 
     st.test('returns null when BitcoinAddress', (sst) => {
-      const input = mockAddress()
+      const input = require('test/helper').mockAddress()
       const actual = predicates.isBitcoinAddress(input, reportError)
       const expected = null
       sst.equals(actual, expected, 'input is BitcoinAddress')
@@ -72,7 +67,7 @@ test('predicates.isBitcoinAddress', (t) => {
     })
 
     st.test('returns validation message when not 34 characters long', (sst) => {
-      const badInput = mockAddress() + 'x'
+      const badInput = require('test/helper').mockAddress() + 'x'
       const actual = predicates.isBitcoinAddress(badInput, reportError)
       const regex = /must be 34 chars/
       sst.assert(regex.test(actual), 'input less than 50 chars long')
