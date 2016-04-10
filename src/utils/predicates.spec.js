@@ -8,12 +8,12 @@ test('predicates.isBitcoinAddress', (t) => {
     return ('1' + times(33, () => 'x').join(''))
   }
 
-  t.test('without validate flag', (st) => {
-    const validate = false
+  t.test('reportError flag false', (st) => {
+    const reportError = false
 
     st.test('returns true when BitcoinAddress', (sst) => {
       const input = mockAddress()
-      const actual = predicates.isBitcoinAddress(input, validate)
+      const actual = predicates.isBitcoinAddress(input, reportError)
       const expected = true
       sst.equals(actual, expected, 'input is BitcoinAddress')
       sst.end()
@@ -21,7 +21,7 @@ test('predicates.isBitcoinAddress', (t) => {
 
     st.test('returns false when not a String', (sst) => {
       const badInput = 42
-      const actual = predicates.isBitcoinAddress(badInput, validate)
+      const actual = predicates.isBitcoinAddress(badInput, reportError)
       const expected = false
       sst.equal(actual, expected, 'input must be a String')
       sst.end()
@@ -29,7 +29,7 @@ test('predicates.isBitcoinAddress', (t) => {
 
     st.test('returns false when not beginning with "1"', (sst) => {
       const badInput = 'x'
-      const actual = predicates.isBitcoinAddress(badInput, validate)
+      const actual = predicates.isBitcoinAddress(badInput, reportError)
       const expected = false
       sst.equal(actual, expected, 'input must begin with a "1"')
       sst.end()
@@ -37,19 +37,19 @@ test('predicates.isBitcoinAddress', (t) => {
 
     st.test('returns false when not 34 characters long', (sst) => {
       const badInput = mockAddress() + 'x'
-      const actual = predicates.isBitcoinAddress(badInput, validate)
+      const actual = predicates.isBitcoinAddress(badInput, reportError)
       const expected = false
       sst.equal(actual, expected, 'input less than 50 chars long')
       sst.end()
     })
   })
 
-  t.test('with validate flag', (st) => {
-    const validate = true
+  t.test('reportError flag true', (st) => {
+    const reportError = true
 
     st.test('returns null when BitcoinAddress', (sst) => {
       const input = mockAddress()
-      const actual = predicates.isBitcoinAddress(input, validate)
+      const actual = predicates.isBitcoinAddress(input, reportError)
       const expected = null
       sst.equals(actual, expected, 'input is BitcoinAddress')
       sst.end()
@@ -57,7 +57,7 @@ test('predicates.isBitcoinAddress', (t) => {
 
     st.test('returns validation message when not a String', (sst) => {
       const badInput = 42
-      const actual = predicates.isBitcoinAddress(badInput, validate)
+      const actual = predicates.isBitcoinAddress(badInput, reportError)
       const regex = /must be a String/
       sst.assert(regex.test(actual), 'input must be a String')
       sst.end()
@@ -65,7 +65,7 @@ test('predicates.isBitcoinAddress', (t) => {
 
     st.test('returns validation message when not beginning with "1"', (sst) => {
       const badInput = 'x'
-      const actual = predicates.isBitcoinAddress(badInput, validate)
+      const actual = predicates.isBitcoinAddress(badInput, reportError)
       const regex = /begin with a "1"/
       sst.assert(regex.test(actual), 'input must begin with a "1"')
       sst.end()
@@ -73,7 +73,7 @@ test('predicates.isBitcoinAddress', (t) => {
 
     st.test('returns validation message when not 34 characters long', (sst) => {
       const badInput = mockAddress() + 'x'
-      const actual = predicates.isBitcoinAddress(badInput, validate)
+      const actual = predicates.isBitcoinAddress(badInput, reportError)
       const regex = /must be 34 chars/
       sst.assert(regex.test(actual), 'input less than 50 chars long')
       sst.end()
@@ -87,12 +87,12 @@ test('predicates.isBitcoinPrivateKey', (t) => {
     return ('5' + times(51, () => 'x').join(''))
   }
 
-  t.test('without validate flag', (st) => {
-    const validate = false
+  t.test('reportError flag false', (st) => {
+    const reportError = false
 
     st.test('returns true when BitcoinPrivateKey', (sst) => {
       const input = mockPrivateKey()
-      const actual = predicates.isBitcoinPrivateKey(input, validate)
+      const actual = predicates.isBitcoinPrivateKey(input, reportError)
       const expected = true
       sst.equals(actual, expected, 'input is BitcoinPrivateKey')
       sst.end()
@@ -100,7 +100,7 @@ test('predicates.isBitcoinPrivateKey', (t) => {
 
     st.test('returns false when not a String', (sst) => {
       const badInput = 42
-      const actual = predicates.isBitcoinPrivateKey(badInput, validate)
+      const actual = predicates.isBitcoinPrivateKey(badInput, reportError)
       const expected = false
       sst.equal(actual, expected, 'input must be a String')
       sst.end()
@@ -108,7 +108,7 @@ test('predicates.isBitcoinPrivateKey', (t) => {
 
     st.test('returns false when not beginning with "5"', (sst) => {
       const badInput = 'x'
-      const actual = predicates.isBitcoinPrivateKey(badInput, validate)
+      const actual = predicates.isBitcoinPrivateKey(badInput, reportError)
       const expected = false
       sst.equal(actual, expected, 'input must begin with a "5"')
       sst.end()
@@ -119,14 +119,14 @@ test('predicates.isBitcoinPrivateKey', (t) => {
 
       function longCheck () {
         const longInput = input + 'x'
-        const actual = predicates.isBitcoinPrivateKey(longInput, validate)
+        const actual = predicates.isBitcoinPrivateKey(longInput, reportError)
         const expected = false
         sst.equal(actual, expected, 'input longer than 52 characters')
       }
 
       function shortCheck () {
         const shortInput = '5x'
-        const actual = predicates.isBitcoinPrivateKey(shortInput, validate)
+        const actual = predicates.isBitcoinPrivateKey(shortInput, reportError)
         const expected = false
         sst.equal(actual, expected, 'input shorter than 51 characters')
       }
@@ -136,12 +136,12 @@ test('predicates.isBitcoinPrivateKey', (t) => {
     })
   })
 
-  t.test('with validate flag', (st) => {
-    const validate = true
+  t.test('reportError flag true', (st) => {
+    const reportError = true
 
     st.test('returns null when BitcoinPrivateKey', (sst) => {
       const input = mockPrivateKey()
-      const actual = predicates.isBitcoinPrivateKey(input, validate)
+      const actual = predicates.isBitcoinPrivateKey(input, reportError)
       const expected = null
       sst.equals(actual, expected, 'input is BitcoinPrivateKey')
       sst.end()
@@ -149,7 +149,7 @@ test('predicates.isBitcoinPrivateKey', (t) => {
 
     st.test('returns validation message when not a String', (sst) => {
       const badInput = 42
-      const actual = predicates.isBitcoinPrivateKey(badInput, validate)
+      const actual = predicates.isBitcoinPrivateKey(badInput, reportError)
       const regex = /must be a String/
       sst.assert(regex.test(actual), 'input must be a String')
       sst.end()
@@ -157,7 +157,7 @@ test('predicates.isBitcoinPrivateKey', (t) => {
 
     st.test('returns validation message when not beginning with "5"', (sst) => {
       const badInput = 'x'
-      const actual = predicates.isBitcoinPrivateKey(badInput, validate)
+      const actual = predicates.isBitcoinPrivateKey(badInput, reportError)
       const regex = /begin with one of: 5, K, L/
       sst.assert(regex.test(actual), 'input must begin with a "5"')
       sst.end()
@@ -168,14 +168,14 @@ test('predicates.isBitcoinPrivateKey', (t) => {
 
       function longCheck () {
         const longInput = input + 'x'
-        const actual = predicates.isBitcoinPrivateKey(longInput, validate)
+        const actual = predicates.isBitcoinPrivateKey(longInput, reportError)
         const regex = /be 51 or 52 characters/
         sst.assert(regex.test(actual), 'input longer than 52 characters')
       }
 
       function shortCheck () {
         const shortInput = '5x'
-        const actual = predicates.isBitcoinPrivateKey(shortInput, validate)
+        const actual = predicates.isBitcoinPrivateKey(shortInput, reportError)
         const regex = /be 51 or 52 characters/
         sst.assert(regex.test(actual), 'input shorter than 51 characters')
       }
@@ -187,12 +187,12 @@ test('predicates.isBitcoinPrivateKey', (t) => {
 })
 
 test('predicates.isInteger', (t) => {
-  t.test('without validate flag', (st) => {
-    const validate = false
+  t.test('reportError flag false', (st) => {
+    const reportError = false
 
     st.test('returns true when Integer', (sst) => {
       const input = 42
-      const actual = predicates.isInteger(input, validate)
+      const actual = predicates.isInteger(input, reportError)
       const expected = true
       sst.equals(actual, expected, 'input is Integer')
       sst.end()
@@ -200,19 +200,19 @@ test('predicates.isInteger', (t) => {
 
     st.test('returns validation message when not a Integer', (sst) => {
       const badInput = '42'
-      const actual = predicates.isInteger(badInput, validate)
+      const actual = predicates.isInteger(badInput, reportError)
       const expected = false
       sst.equal(actual, expected, 'input must be a Integer')
       sst.end()
     })
   })
 
-  t.test('with validate flag', (st) => {
-    const validate = true
+  t.test('reportError flag true', (st) => {
+    const reportError = true
 
     st.test('returns null when Integer', (sst) => {
       const input = 42
-      const actual = predicates.isInteger(input, validate)
+      const actual = predicates.isInteger(input, reportError)
       const expected = null
       sst.equals(actual, expected, 'input is Integer')
       sst.end()
@@ -220,7 +220,7 @@ test('predicates.isInteger', (t) => {
 
     st.test('returns validation message when not a Integer', (sst) => {
       const badInput = '42'
-      const actual = predicates.isInteger(badInput, validate)
+      const actual = predicates.isInteger(badInput, reportError)
       const regex = /be a Integer/
       sst.assert(regex.test(actual), 'input must be a Integer')
       sst.end()
@@ -229,38 +229,38 @@ test('predicates.isInteger', (t) => {
 })
 
 test('predicates.isString', (t) => {
-  t.test('without validate flag', (st) => {
-    const validate = false
+  t.test('reportError flag false', (st) => {
+    const reportError = false
 
     st.test('returns true when String', (sst) => {
       const input = '42'
-      const actual = predicates.isString(input, validate)
+      const actual = predicates.isString(input, reportError)
       const expected = true
       sst.equals(actual, expected, 'input is String')
       sst.end()
     })
     st.test('returns false when not a String', (sst) => {
       const badInput = 42
-      const actual = predicates.isString(badInput, validate)
+      const actual = predicates.isString(badInput, reportError)
       const expected = false
       sst.equal(actual, expected, 'input must be a String')
       sst.end()
     })
   })
 
-  t.test('with validate flag', (st) => {
-    const validate = true
+  t.test('reportError flag true', (st) => {
+    const reportError = true
 
     st.test('returns null when String', (sst) => {
       const input = '42'
-      const actual = predicates.isString(input, validate)
+      const actual = predicates.isString(input, reportError)
       const expected = null
       sst.equals(actual, expected, 'input is String')
       sst.end()
     })
     st.test('returns validation message when not a String', (sst) => {
       const badInput = 42
-      const actual = predicates.isString(badInput, validate)
+      const actual = predicates.isString(badInput, reportError)
       const regex = /be a String/
       sst.assert(regex.test(actual), 'input must be a String')
       sst.end()

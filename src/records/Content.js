@@ -19,8 +19,8 @@ const Content = {
   },
 
   // validation
-  isValid: (data) => require('utils/isValid')(properties, data, false),
-  validate: (data) => require('utils/isValid')(properties, data, true)
+  isValid: (data) => require('utils/isValid')(properties, data, { throwErrors: false }),
+  validate: (data) => require('utils/isValid')(properties, data, { throwErrors: true })
 }
 
 module.exports = Content
