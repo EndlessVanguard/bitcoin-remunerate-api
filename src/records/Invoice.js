@@ -1,5 +1,5 @@
 const properties = (function makeProperties () {
-  const predicates = require('../utils/predicates')
+  const predicates = require('utils/predicates')
   return Object.freeze({
     address: predicates.isBitcoinAddress,
     contentId: predicates.isString,
@@ -13,7 +13,7 @@ const redisKey = 'content'
 const Invoice = {
   // database
   find: (address) => {
-    const redisDb = require('./config/redis')
+    const redisDb = require('config/redis')
     return new Promise((resolve, reject) => {
       redisDb.hget(redisKey, address, (error, invoiceData) => {
         if (error) reject(error)
@@ -22,7 +22,7 @@ const Invoice = {
     })
   },
   findAll: () => {
-    const redisDb = require('./config/redis')
+    const redisDb = require('config/redis')
     return new Promise((resolve, reject) => {
       redisDb.hkeys(redisKey, (error, addressList) => {
         if (error) reject(error)
@@ -31,7 +31,7 @@ const Invoice = {
     })
   },
   save: (data) => {
-    const redisDb = require('./config/redis')
+    const redisDb = require('config/redis')
     Invoice.validate(data)
     redisDb.hset(redisKey, data.address, JSON.stringify({
       address: data.address,

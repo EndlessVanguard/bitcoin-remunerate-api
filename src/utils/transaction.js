@@ -5,7 +5,7 @@ const isObject = require('lodash/isObject')
 const fetch = {
   getLastTransactionId: (inputData, callback) => {
     var bitcoinPrivateKeyWIF = inputData.privateKey
-    const blockchainApi = require('./blockchainApi')
+    const blockchainApi = require('utils/blockchainApi')
     const bitcoin = require('bitcoinjs-lib')
     const address = bitcoin.ECPair.fromWIF(bitcoinPrivateKeyWIF).getAddress()
     bitcoinPrivateKeyWIF = undefined
@@ -15,7 +15,7 @@ const fetch = {
       .catch((err) => callback(err, null))
   },
   inputsList: (contentId) => {
-    const Invoice = require('./records/Invoice')
+    const Invoice = require('records/Invoice')
     // To get inputsList, we need to first fetch all the keys.
     // For each key, we need to fetch redisDb.get for that key
     return Invoice.findAll(contentId)
@@ -24,7 +24,7 @@ const fetch = {
       ))
   },
   contentPayoutAddress: (contentId) => {
-    const contentDb = require('../../config/content-database')
+    const contentDb = require('config/content-database')
     if ('payoutAddress' in contentDb[contentId]) {
       return contentDb[contentId].payoutAddress
     }
@@ -144,7 +144,7 @@ function addBlockchainInformationToInputs (inputsList) {
 
 function payoutContent (contentId) {
   // side effecty. Pays out all outstanding balances we owe to contentId
-  const blockchainApi = require('./blockchainApi')
+  const blockchainApi = require('utils/blockchainApi')
   return fetch.inputsList(contentId)
     .then(addBlockchainInformationToInputs)
     .then((inputsList) => ({

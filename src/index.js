@@ -1,8 +1,8 @@
 const isNil = require('lodash/isNil')
 
-const blockchainApi = require('./utils/blockchainApi')
-const Content = require('./records/Content')
-const Invoice = require('./records/Invoice')
+const blockchainApi = require('utils/blockchainApi')
+const Content = require('records/Content')
+const Invoice = require('records/Invoice')
 
 const app = require('express')()
 app.use(require('cors')())

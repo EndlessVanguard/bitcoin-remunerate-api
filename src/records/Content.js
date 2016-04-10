@@ -1,5 +1,5 @@
 const properties = (function makeProperties () {
-  const predicates = require('../utils/predicates')
+  const predicates = require('utils/predicates')
   return Object.freeze({
     contentId: predicates.isString,
     content: predicates.isString,
@@ -10,7 +10,7 @@ const properties = (function makeProperties () {
 const Content = {
   // database
   find: (contentId) => {
-    return require('../config/content-database.js')[contentId]
+    return require('config/content-database.js')[contentId]
   },
 
   // helper
