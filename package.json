@@ -28,7 +28,8 @@
     "lint": "standard ./src/**/*",
     "lint-watch": "nodemon -I -q -x 'npm run lint' -w 'src/'",
     "repl": "NODE_PATH=./src node",
-    "test": "NODE_PATH=./src  tape src/**/*.spec.js",
+    "test": "npm run lint && npm run testsuite",
+    "testsuite": "NODE_PATH=./src tape src/**/*.spec.js",
     "test-watch": "nodemon -I -q -x 'npm run test' -w 'src/'",
     "start-redis": "redis-server ./config/redis.conf"
   }
