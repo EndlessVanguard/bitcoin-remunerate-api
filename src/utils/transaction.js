@@ -3,48 +3,28 @@ const isArray = require('lodash/isArray')
 const isObject = require('lodash/isObject')
 
 const fetch = {
-  contentAddresses: (contentId) => {
-    const redisDb = require('../config/redis')
-    return new Promise((resolve, reject) => {
-      redisDb.keys('*', (err, data) => { // TODO this is blocking, and you need to REPENT! ✞
-        if (err) reject(err)
-        resolve(data)
-      })
-    })
-  },
   getLastTransactionId: (inputData, callback) => {
     var bitcoinPrivateKeyWIF = inputData.privateKey
-    const blockchainApi = require('./blockchainApi')
+    const blockchainApi = require('utils/blockchainApi')
     const bitcoin = require('bitcoinjs-lib')
     const address = bitcoin.ECPair.fromWIF(bitcoinPrivateKeyWIF).getAddress()
     bitcoinPrivateKeyWIF = undefined
 
     return blockchainApi.lookup(address)
-    .then((addressInfo) => callback(null, addressInfo))
-    .catch((err) => callback(err, null))
-  },
-  getInput: (bitcoinAddress) => {
-    const redisDb = require('../config/redis')
-    return new Promise((resolve, reject) => {
-      redisDb.get(bitcoinAddress, (err, data) => {
-        if (err) reject(err)
-        resolve(data)
-      })
-    })
+      .then((addressInfo) => callback(null, addressInfo))
+      .catch((err) => callback(err, null))
   },
   inputsList: (contentId) => {
+    const Invoice = require('records/Invoice')
     // To get inputsList, we need to first fetch all the keys.
     // For each key, we need to fetch redisDb.get for that key
-    return fetch.contentAddresses(contentId).then((addresses) => {
-      return Promise.all(
-        addresses.map((address) => {
-          return fetch.getInput(address).then(JSON.parse)
-        })
-      )
-    })
+    return Invoice.findAll(contentId)
+      .then((addresses) => Promise.all(
+        addresses.map((address) => Invoice.find)
+      ))
   },
   contentPayoutAddress: (contentId) => {
-    const contentDb = require('../../config/content-database')
+    const contentDb = require('config/content-database')
     if ('payoutAddress' in contentDb[contentId]) {
       return contentDb[contentId].payoutAddress
     }
@@ -164,28 +144,26 @@ function addBlockchainInformationToInputs (inputsList) {
 
 function payoutContent (contentId) {
   // side effecty. Pays out all outstanding balances we owe to contentId
-  const blockchainApi = require('./blockchainApi')
+  const blockchainApi = require('utils/blockchainApi')
   return fetch.inputsList(contentId)
-  .then(addBlockchainInformationToInputs)
-  .then((inputsList) => {
-    return {
+    .then(addBlockchainInformationToInputs)
+    .then((inputsList) => ({
       inputsList: inputsList,
       payoutAddress: fetch.contentPayoutAddress(contentId),
       serviceAddress: fetch.serviceAddress()
-    }
-  })
-  .then(buildTransaction)
-  .then(blockchainApi.broadcastTransaction)
-  .then((result) => {
-    console.log('Message from blockchain.info:', result)
-    return result
-  })
+    }))
+    .then(buildTransaction)
+    .then(blockchainApi.broadcastTransaction)
+    .then((result) => {
+      console.log('Message from blockchain.info:', result)
+      return result
+    })
 }
 
 module.exports = {
   addressesPaidWithinTimeRange: addressesPaidWithinTimeRange,
   buildTransaction: buildTransaction,
   calculateFee: calculateFee,
-  payoutContent: payoutContent,
-  isValidInput: isValidInput
+  isValidInput: isValidInput,
+  payoutContent: payoutContent
 }
