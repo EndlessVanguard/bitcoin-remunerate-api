@@ -2,7 +2,7 @@
   "name": "bitcoin-remunerate-api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "author": "",
   "license": "ISC",
   "devDependencies": {
@@ -22,14 +22,14 @@
     "request": "^2.69.0"
   },
   "scripts": {
-    "start": "NODE_PATH=./src node src/index.js",
+    "start": "NODE_PATH=./src node src/server.js",
     "devserver": "npm run lint && parallelshell 'npm run start-redis' 'npm run start'",
     "devserver-watch": "nodemon -I -q -x 'npm run devserver' -w 'src/'",
-    "lint": "standard ./src/**/*",
+    "lint": "standard",
     "lint-watch": "nodemon -I -q -x 'npm run lint' -w 'src/'",
     "repl": "NODE_PATH=./src node",
     "test": "npm run lint && npm run testsuite",
-    "testsuite": "NODE_PATH=./src tape src/**/*.spec.js",
+    "testsuite": "NODE_PATH=./src tape src/*.spec.js src/**/*.spec.js",
     "test-watch": "nodemon -I -q -x 'npm run test' -w 'src/'",
     "start-redis": "redis-server ./config/redis.conf"
   }
