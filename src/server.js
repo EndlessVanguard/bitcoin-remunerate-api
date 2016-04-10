@@ -54,7 +54,7 @@ app.get('/0/content/:contentId', function (req, res) {
 })
 
 const port = 3000
-app.listen(port, function () {
+const server = app.listen(port, function () {
   console.log('server on', port, '😎')
 })
 
@@ -74,4 +74,9 @@ function isPaid (data) {
   const price = 1
   const isPaid = data.total_received > price
   return isPaid
+}
+
+module.exports = {
+  app: app,
+  server: server
 }

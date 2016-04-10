@@ -9,6 +9,7 @@
     "nodemon": "^1.9.1",
     "parallelshell": "^2.0.0",
     "standard": "^6.0.8",
+    "supertest": "^1.2.0",
     "tape": "^4.5.1"
   },
   "dependencies": {
