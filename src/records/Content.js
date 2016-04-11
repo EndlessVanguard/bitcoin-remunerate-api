@@ -3,6 +3,8 @@ const properties = (function makeProperties () {
   return Object.freeze({
     contentId: predicates.isString,
     content: predicates.isString,
+    price: predicates.isInteger,
+    currency: predicates.isCurrency,
     payoutAddress: predicates.isBitcoinAddress
   })
 }())
