@@ -22,7 +22,7 @@ const predicates = {
   },
 
   isCurrency: (currency, validate) => {
-    currency === 'satoshi' ? null : true
+    return (currency === 'satoshi' ? null : true)
   },
 
   // integer: any
