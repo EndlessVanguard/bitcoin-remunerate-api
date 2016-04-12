@@ -78,14 +78,18 @@ function buildTransaction (transactionInfo) {
   const serviceAddress = transactionInfo.serviceAddress
   var tx = new bitcoin.TransactionBuilder()
   console.assert(isArray(inputsList), 'TypeError: inputsList not an Array')
+  console.assert(inputsList.length > 0, 'inputsList is empty')
   console.assert(isString(payoutAddress) && isString(serviceAddress))
+
   inputsList.forEach((input, index) => {
+    console.assert(input, 'can not build transaction, bad input')
     tx.addInput(input.lastTransaction, index)
   })
 
   const amount = calculateFee(
     inputsList.reduce((sum, x) => sum + x.finalBalance, 0)
   )
+  console.assert(amount.payout > 0, 'Payout is empty, aborting. No money to pay out for this content right now')
 
   if (amount.payout > 0) {
     tx.addOutput(payoutAddress, amount.payout)
@@ -110,11 +114,11 @@ function isValidInput (inputObj) {
   return true
 }
 
-function addBlockchainInformationToInputs (inputsList) {
+function addBlockchainInformationToInputs (invoiceList) {
   const async = require('async')
   // Fetch and merge all TX data we need as input in our transactions
   return new Promise((resolve, reject) => {
-    async.mapLimit(inputsList, 5, fetch.getLastTransactionId, (err, transactionInfo) => {
+    async.mapLimit(invoiceList, 5, fetch.getLastTransactionId, (err, transactionInfo) => {
       if (!err) {
         resolve(
           transactionInfo.map((txInfo) => {
@@ -123,22 +127,31 @@ function addBlockchainInformationToInputs (inputsList) {
         )
       } else {
         reject(transactionInfo)
-        console.log('err!')
+        console.error('err!')
       }
     })
-  }).then((listOfTxInfo) => {
-    // Merge the results of getLastTransactionId with inputsList
-    return inputsList.map((input, index) => {
-      if ('paymentTimestamp' in input) {
-        var newInput = input
-        newInput.finalBalance = listOfTxInfo[index].final_balance
-        // TODO make sure txs[0] is the newest, not oldest
-        newInput.lastTransaction = listOfTxInfo[index].txs[0].hash
-        console.assert(isValidInput(newInput))
+  }).then((rawListOfTxInfo) => {
+    const listOfTxInfo = rawListOfTxInfo.filter((txInfo) => txInfo.txs.length > 0)
 
-        return newInput
-      } else { return false }
-    })
+    if (listOfTxInfo.length < 1) return false
+
+    // Merge the results of getLastTransactionId with invoiceList
+    return invoiceList.map((invoice, index) => {
+      if ('paymentTimestamp' in invoice) {
+        if (listOfTxInfo[index] && 'final_balance' in listOfTxInfo[index]) {
+          var txInput = invoice
+          txInput.finalBalance = listOfTxInfo[index].final_balance
+
+          // TODO make sure txs[0] is the newest, not oldest
+          txInput.lastTransaction = listOfTxInfo[index].txs[0].hash
+          console.assert(isValidInput(txInput))
+
+          return txInput
+        }
+      } else {
+        return false // contains no paymentTimestamp
+      }
+    }).filter((invoice) => !!invoice) // filter out all marked with false
   })
 }
 
@@ -147,11 +160,14 @@ function payoutContent (contentId) {
   const blockchainApi = require('utils/blockchainApi')
   return fetch.inputsList(contentId)
     .then(addBlockchainInformationToInputs)
-    .then((inputsList) => ({
-      inputsList: inputsList,
-      payoutAddress: fetch.contentPayoutAddress(contentId),
-      serviceAddress: fetch.serviceAddress()
-    }))
+    .then((inputsList) => {
+      console.assert(inputsList)
+      return {
+        inputsList: inputsList.filter((x) => !!x),
+        payoutAddress: fetch.contentPayoutAddress(contentId),
+        serviceAddress: fetch.serviceAddress()
+      }
+    })
     .then(buildTransaction)
     .then(blockchainApi.broadcastTransaction)
     .then((result) => {
