@@ -7,6 +7,7 @@ const Invoice = require('records/Invoice')
 
 const app = require('express')()
 app.use(require('cors')())
+app.use(require('body-parser').json({ limit: '500kb' }))
 
 // index
 app.get('/', (req, res) => (
@@ -59,6 +60,41 @@ app.get('/0/content/:contentId', (req, res) => {
       return res.status(500).send(
         'ERROR: bad times looking up ', address, contentId
       )
+    })
+})
+
+const contentReturnTypes = Object.freeze([
+  'id', 'js', 'url'
+])
+const parseReturnType = (returnType, knownReturnTypes) => {
+  if (isNil(returnType)) return 'url'
+  returnType = returnType.toLowerCase()
+  if (knownReturnTypes.indexOf(returnType) === -1) return null
+  return returnType
+}
+const sendAsReturnType = (contentRecord, returnType) => {
+  if (returnType === 'id') {
+    return contentRecord.contentId
+  } else if (returnType === 'js') {
+    // TODO: need a template of the current build for web client and inject contentId
+    return 'js-snippet'
+  } else if (returnType === 'url') {
+    return `https://api.momona.com/content/${contentRecord.contentId}`
+  } else {
+    throw Error(`invalid returnType ${returnType}`)
+  }
+}
+app.post('/0/content', (req, res) => {
+  const returnType = parseReturnType(req.query.return, contentReturnTypes)
+  if (isNil(returnType)) {
+    return res.status(400).json(sendMessage(`returnType ${req.query.return} not supported. Available options ${contentReturnTypes}`))
+  }
+  return Content.save(req.body)
+    .then((contentRecord) => {
+      res.status(200).send(sendAsReturnType(contentRecord, returnType))
+    })
+    .catch((error) => {
+      res.status(400).json(sendMessage(error.message))
     })
 })
 

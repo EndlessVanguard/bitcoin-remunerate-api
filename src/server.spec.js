@@ -45,4 +45,99 @@ test('route GET /0/content/:contentId', (t) => {
   })
 })
 
+test('route POST /0/content', (t) => {
+  const mockData = () => ({
+    contentId: 'mein-artikle',
+    content: 'eins zwei dri',
+    payoutAddress: require('test/helper').mockAddress()
+  })
+
+  const spyOnContentSave = () => require('test/helper').spyOn(
+    require('records/Content'),
+    'save',
+    (data) => Promise.resolve(data)
+  )
+
+  t.test('without return query, defaults to url return query', (st) => {
+    const reqData = mockData()
+    const contentRecordSpy = spyOnContentSave()
+    request(api.app).post(apiUrl())
+      .send(reqData)
+      .expect('Content-Type', /text/)
+      .expect(200)
+      .end((error, res) => {
+        if (error) st.fail(error)
+        st.assert(contentRecordSpy.called(), 'Content.save was called')
+        const expected = `https://api.momona.com/content/${reqData.contentId}`
+        st.equals(res.text, expected, 'a URL to GET the content')
+        contentRecordSpy.restore()
+        st.end()
+      })
+  })
+
+  t.test('id return query', (st) => {
+    const reqData = mockData()
+    const contentRecordSpy = spyOnContentSave()
+    const returnType = 'id'
+    request(api.app).post(apiUrl(`?return=${returnType}`))
+      .send(reqData)
+      .expect('Content-Type', /text/)
+      .expect(200)
+      .end((error, res) => {
+        if (error) st.fail(error)
+        st.assert(contentRecordSpy.called(), 'Content.save was called')
+        st.equals(res.text, reqData.contentId, 'the contentId to use for future requests')
+        contentRecordSpy.restore()
+        st.end()
+      })
+  })
+  t.test('js return query', (st) => {
+    const reqData = mockData()
+    const contentRecordSpy = spyOnContentSave()
+    const returnType = 'js'
+    request(api.app).post(apiUrl(`?return=${returnType}`))
+      .send(reqData)
+      .expect('Content-Type', /text/)
+      .expect(200)
+      .end((error, res) => {
+        if (error) st.fail(error)
+        st.assert(contentRecordSpy.called(), 'Content.save was called')
+        const expected = 'js-snippet'
+        st.equals(res.text, expected, 'a javscript blob to use in <script>')
+        contentRecordSpy.restore()
+        st.end()
+      })
+  })
+  t.test('url return query', (st) => {
+    const reqData = mockData()
+    const contentRecordSpy = spyOnContentSave()
+    const returnType = 'url'
+    request(api.app).post(apiUrl(`?return=${returnType}`))
+      .send(reqData)
+      .expect('Content-Type', /text/)
+      .expect(200)
+      .end((error, res) => {
+        if (error) st.fail(error)
+        st.assert(contentRecordSpy.called(), 'Content.save was called')
+        const expected = `https://api.momona.com/content/${reqData.contentId}`
+        st.equals(res.text, expected, 'a URL to GET the content')
+        contentRecordSpy.restore()
+        st.end()
+      })
+  })
+
+  t.test('invalid return query', (st) => {
+    const badReturnType = 'nope'
+    request(api.app).post(apiUrl(`?return=${badReturnType}`))
+      .expect('Content-Type', /json/)
+      .expect(400)
+      .end((error, res) => {
+        if (error) st.fail(error)
+        const regex = RegExp(`returnType ${badReturnType} not supported`)
+        st.assert(regex.test(res.body.message), 'return query must be supported returnType')
+        st.end()
+      })
+  })
+})
+
 api.server.close()

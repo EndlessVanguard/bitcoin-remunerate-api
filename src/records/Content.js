@@ -9,10 +9,22 @@ const properties = (function makeProperties () {
   })
 }())
 
+const redisKey = 'content'
+
 const Content = {
   // database
   find: (contentId) => {
     return require('config/content-database.js')[contentId]
+  },
+  save: (data) => {
+    const redisDb = require('config/redis')
+    return new Promise((resolve, reject) => {
+      Content.validate(data)
+      redisDb.hset(redisKey, data.contentId, JSON.stringify(data), (error) => {
+        if (error) reject(error)
+        resolve(data)
+      })
+    })
   },
 
   // helper
