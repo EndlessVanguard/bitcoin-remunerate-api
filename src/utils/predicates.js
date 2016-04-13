@@ -21,6 +21,10 @@ const predicates = {
     return reportError ? null : true
   },
 
+  isCurrency: (currency, validate) => {
+    return (currency === 'satoshi' ? null : true)
+  },
+
   // integer: any
   isInteger: (integer, reportError) => {
     const isInteger = require('lodash/isInteger')
