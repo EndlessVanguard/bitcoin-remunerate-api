@@ -7,50 +7,53 @@ const Invoice = require('records/Invoice')
 const app = require('express')()
 app.use(require('cors')())
 
-app.get('/', (req, res) => res.status(200).send(`Welcome to Momona! Do GET /0/content/:contentId`))
+app.get('/', (req, res) => res.status(200).send(`Welcome to Momona! Use GET /0/content/:contentId`))
 app.get('/0/content/:contentId', function (req, res) {
   const address = req.query.address
   const contentId = req.params.contentId
 
   if (isNil(address)) {
     const newAddress = Invoice.newKeypair(contentId)
-    return res.status(402).json(sendPrompt(newAddress))
+    const content = Content.find(contentId)
+
+    return res.status(402).json(
+      sendPrompt(newAddress, content.price, content.label))
   }
   if (isNil(contentId)) {
     return res.status(400).send('missing contentId. Remember to put something after the /!')
   }
 
-  Invoice.isAddressAndContentPaired(address, contentId)
-    .then((addressFound) => {
-      if (!addressFound) {
-        const newAddress = Invoice.newKeypair(contentId)
-        return res.status(402).json(sendPrompt(newAddress))
-      }
+  Invoice.isAddressAndContentPaired(address, contentId).then((addressFound) => {
+    if (!addressFound) {
+      const newAddress = Invoice.newKeypair(contentId)
+      const content = Content.find(contentId)
+      res.status(402).json(
+        sendPrompt(address, content.price, content.label))
+    }
 
-      return blockchainApi.lookup(address)
-        .then((rawAddressInformation) => {
-          const body = JSON.parse(rawAddressInformation.body)
-          if (isPaid(body)) {
-            Invoice.markAsPaid(address)
-            res.status(200).send(Content.fetchContent(contentId))
-          } else {
-            console.log('not paid')
-            res.status(402).json(sendPrompt(address))
-          }
-        })
-        .catch((error) => {
-          console.log('ERROR: ', error)
-          return res.status(500).send(
-            'ERROR: bad times getting info from ' + address
-          )
-        })
-    })
-    .catch((error) => {
+    return blockchainApi.lookup(address).then((rawAddressInformation) => {
+      const body = JSON.parse(rawAddressInformation.body)
+      if (isPaid(body)) {
+        Invoice.markAsPaid(address)
+        res.status(200).send(Content.fetchContent(contentId))
+      } else {
+        console.log('not paid')
+        const content = Content.find(contentId)
+        res.status(402).json(
+          sendPrompt(address, content.price, content.label))
+      }
+    }).catch((error) => {
       console.log('ERROR: ', error)
       return res.status(500).send(
-        'ERROR: bad times looking up ', address, contentId
+        'ERROR: bad times getting info from ' + address
       )
     })
+  }).catch((error) => {
+    console.log('ERROR: ', error)
+    return res.status(500).send(
+      'ERROR: bad times looking up ', address, contentId
+    )
+  })
 })
 
 const port = 3000
@@ -58,10 +61,11 @@ app.listen(port, function () {
   console.log('server on', port, '😎')
 })
 
-function sendPrompt (address) {
+function sendPrompt (address, satoshis, label) {
   return {
-    display: 'payment.prompt',
-    address: address
+    address: address,
+    satoshis: satoshis,
+    label: label
   }
 }
 
