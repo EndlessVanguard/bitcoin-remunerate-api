@@ -3,19 +3,15 @@ const test = require('tape')
 const predicates = require('./predicates')
 
 test('predicates.isBitcoinAddress', (t) => {
-  const mockAddress = () => {
-    const times = require('lodash/times')
-    return ('1' + times(33, () => 'x').join(''))
-  }
+  const mockAddress = '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
 
   t.test('reportError flag false', (st) => {
     const reportError = false
 
     st.test('returns true when BitcoinAddress', (sst) => {
-      const input = mockAddress()
+      const input = mockAddress
       const actual = predicates.isBitcoinAddress(input, reportError)
-      const expected = true
-      sst.equals(actual, expected, 'input is BitcoinAddress')
+      sst.equals(actual, true, 'input is BitcoinAddress')
       sst.end()
     })
 
@@ -34,24 +30,15 @@ test('predicates.isBitcoinAddress', (t) => {
       sst.equal(actual, expected, 'input must begin with a "1"')
       sst.end()
     })
-
-    st.test('returns false when not 34 characters long', (sst) => {
-      const badInput = mockAddress() + 'x'
-      const actual = predicates.isBitcoinAddress(badInput, reportError)
-      const expected = false
-      sst.equal(actual, expected, 'input less than 50 chars long')
-      sst.end()
-    })
   })
 
   t.test('reportError flag true', (st) => {
     const reportError = true
 
     st.test('returns null when BitcoinAddress', (sst) => {
-      const input = mockAddress()
+      const input = mockAddress
       const actual = predicates.isBitcoinAddress(input, reportError)
-      const expected = null
-      sst.equals(actual, expected, 'input is BitcoinAddress')
+      sst.equals(actual, null, 'input is BitcoinAddress')
       sst.end()
     })
 
@@ -71,10 +58,10 @@ test('predicates.isBitcoinAddress', (t) => {
       sst.end()
     })
 
-    st.test('returns validation message when not 34 characters long', (sst) => {
-      const badInput = mockAddress() + 'x'
+    st.test('returns validation message when address not between 26 to 35 chars', (sst) => {
+      const badInput = '1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2xx'
       const actual = predicates.isBitcoinAddress(badInput, reportError)
-      const regex = /must be 34 chars/
+      const regex = /must be between 26 and 35 chars long/
       sst.assert(regex.test(actual), 'input less than 50 chars long')
       sst.end()
     })

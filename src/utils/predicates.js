@@ -1,11 +1,17 @@
+const isString = require('lodash/isString')
+
 const predicates = {
   // string: address of a bitcoin wallet
   isBitcoinAddress: (address, reportError) => {
     // https://en.bitcoin.it/wiki/List_of_address_prefixes
-    const isString = require('lodash/isString')
+    // https://en.bitcoin.it/wiki/Address#Address_validation
     if (!isString(address)) { return reportError ? 'must be a String' : false }
     if (!/^[1]/.test(address)) { return reportError ? 'must begin with a "1"' : false }
-    if (address.length !== 34) { return reportError ? 'must be 34 chars long' : false }
+
+    if (!(address.length <= 35 && address.length >= 26)) {
+      return reportError ? 'must be between 26 and 35 chars long' : false
+    }
+
     return reportError ? null : true
   },
 
