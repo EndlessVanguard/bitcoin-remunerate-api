@@ -29,7 +29,6 @@ test('isValid', (t) => {
       const mockData = { id: undefined }
       const actual = isValid(mockProperties, mockData, options)
       const expected = false
-      console.log(actual)
       sst.equal(actual, expected, 'no properties can be undefined in data')
       sst.end()
     })
