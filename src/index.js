@@ -7,8 +7,8 @@ const Invoice = require('records/Invoice')
 const app = require('express')()
 app.use(require('cors')())
 
-app.get('/', (req, res) => res.status(200).send('Welcome to momona! Use <code>/0/:contentId</code>'))
-app.get('/0/:contentId', function (req, res) {
+app.get('/', (req, res) => res.status(200).send(`Welcome to Momona! Do GET /0/content/:contentId`))
+app.get('/0/content/:contentId', function (req, res) {
   const address = req.query.address
   const contentId = req.params.contentId
 
