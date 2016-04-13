@@ -8,7 +8,7 @@ const properties = (function makeProperties () {
   })
 }())
 
-const redisKey = 'content'
+const redisKey = 'invoice'
 
 const Invoice = {
   // database
@@ -33,11 +33,7 @@ const Invoice = {
   save: (data) => {
     const redisDb = require('config/redis')
     Invoice.validate(data)
-    redisDb.hset(redisKey, data.address, JSON.stringify({
-      address: data.address,
-      contentId: data.contentId,
-      privateKey: data.privateKey
-    }))
+    redisDb.hset(redisKey, data.address, JSON.stringify(data))
   },
 
   // helpers
@@ -49,10 +45,10 @@ const Invoice = {
 
   markAsPaid: (address) => {
     return Invoice.find(address)
-      .then((invoice) => {
-        if (!invoice.paymentTimestamp) {
-          invoice.paymentTimestamp = Date.now()
-          Invoice.save(invoice)
+      .then((invoiceRecord) => {
+        if (!invoiceRecord.paymentTimestamp) {
+          invoiceRecord.paymentTimestamp = Date.now()
+          Invoice.save(invoiceRecord)
         }
       })
   },
