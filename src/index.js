@@ -31,7 +31,9 @@ app.get('/0/content/:contentId', function (req, res) {
         sendPrompt(address, content.price, content.label))
     }
 
-    return blockchainApi.lookup(address).then((rawAddressInformation) => {
+    return blockchainApi
+    .lookup(address)
+    .then((rawAddressInformation) => {
       const body = JSON.parse(rawAddressInformation.body)
       if (isPaid(body)) {
         Invoice.markAsPaid(address)
@@ -42,13 +44,15 @@ app.get('/0/content/:contentId', function (req, res) {
         res.status(402).json(
           sendPrompt(address, content.price, content.label))
       }
-    }).catch((error) => {
+    })
+    .catch((error) => {
       console.log('ERROR: ', error)
       return res.status(500).send(
         'ERROR: bad times getting info from ' + address
       )
     })
-  }).catch((error) => {
+  })
+  .catch((error) => {
     console.log('ERROR: ', error)
     return res.status(500).send(
       'ERROR: bad times looking up ', address, contentId
