@@ -30,7 +30,7 @@ app.get('/0/content/:contentId', (req, res) => {
     return res.status(402).json(sendPrompt(newAddress))
   }
   if (!predicates.isBitcoinAddress(address)) {
-    return res.status(400).json(sendMessage(validates.isBitcoinAddress(address)))
+    return res.status(400).json({errors: validates.errorsInBitcoinAddress(address)})
   }
 
   Invoice.isAddressAndContentPaired(address, contentId)

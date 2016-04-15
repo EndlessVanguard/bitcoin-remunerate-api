@@ -1,8 +1,3 @@
-const mockAddress = () => {
-  const times = require('lodash/times')
-  return ('1' + times(33, () => 'x').join(''))
-}
-
 const spyOn = (Record, fn, cb) => {
   'use strict'
   const originalFn = Record[fn]
@@ -18,6 +13,7 @@ const spyOn = (Record, fn, cb) => {
 }
 
 module.exports = {
-  mockAddress: mockAddress,
+  validAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw',
+  validWIF: '5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ',
   spyOn: spyOn
 }

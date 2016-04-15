@@ -1,124 +1,104 @@
 const test = require('tape')
-
+const isEqual = require('lodash/isEqual')
+const includes = require('lodash/includes')
 const validates = require('./validates')
 
+const validAddress = require('../test/helper.js').validAddress
+
+test('validates.errorsInBitcoinAddress', (t) => {
+  t.assert(isEqual(validates.errorsInBitcoinAddress(validAddress), []),
+           'no errors in valid address')
+
+  const addressWithBadBeginning = '79qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
+  t.assert(isEqual(
+    validates.errorsInBitcoinAddress(addressWithBadBeginning),
+    ['must begin with a "1" or "3"']
+  ), 'must begin with 1 or 3')
+
+  t.assert(includes(
+    validates.errorsInBitcoinAddress(2381),
+    'must be a String'
+  ), 'must be String')
+
+  const tooLongAddress = '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBwtrhortyihjtyhoytrg'
+  t.assert(isEqual(
+    validates.errorsInBitcoinAddress(tooLongAddress),
+    ['can not be longer than 35 chars']
+  ), 'can not be longer than 35 chars')
+
+  t.assert(isEqual(
+    validates.errorsInBitcoinAddress(validAddress.substring(0, 25)),
+    ['can not be shorter than 26 chars']
+  ), 'can not be shorter than 26 chars')
+
+  t.end()
+})
+
 test('validates.isBitcoinAddress', (t) => {
-  t.test('returns null when BitcoinAddress', (st) => {
-    const input = require('test/helper').mockAddress()
-    const actual = validates.isBitcoinAddress(input)
-    const expected = null
-    st.equals(actual, expected, 'input is BitcoinAddress')
-    st.end()
-  })
+  t.assert(validates.isBitcoinAddress(validAddress), 'valid address is valid')
+  t.assert(!validates.isBitcoinAddress('x'), 'addresses not starting with 1 or 3 are invalid')
+  t.assert(!validates.isBitcoinAddress(1235), 'non-string addresses are invalid')
 
-  t.test('returns validation message when not a String', (st) => {
-    const badInput = 42
-    const actual = validates.isBitcoinAddress(badInput)
-    const regex = /must be a String/
-    st.assert(regex.test(actual), 'input must be a String')
-    st.end()
-  })
+  t.end()
+})
 
-  t.test('returns validation message when not beginning with "1"', (st) => {
-    const badInput = 'x'
-    const actual = validates.isBitcoinAddress(badInput)
-    const regex = /begin with a "1"/
-    st.assert(regex.test(actual), 'input must begin with a "1"')
-    st.end()
-  })
+const validWIF = require('../test/helper.js').validWIF
+test('validates.errorsInPrivateKey', (t) => {
+  t.assert(isEqual(validates.errorsInPrivateKey(validWIF), []),
+           'valid WIF is valid')
 
-  t.test('returns validation message when not 34 characters long', (st) => {
-    const badInput = require('test/helper').mockAddress() + 'x'
-    const actual = validates.isBitcoinAddress(badInput)
-    const regex = /must be 34 chars/
-    st.assert(regex.test(actual), 'input less than 50 chars long')
-    st.end()
-  })
+  t.assert(includes(
+    validates.errorsInPrivateKey(123), 'must be a String'
+  ))
+
+  t.assert(includes(
+    validates.errorsInPrivateKey('x'),
+    'must begin with one of: 5, K, L]'),
+    'must begin with one of: 5, K, L]'
+  )
+
+  t.assert(includes(
+    validates.errorsInPrivateKey(validWIF.substring(0, 40)),
+    'Private Key WIF must be at least 51 characters long'
+  ), 'Private Key WIF must be at least 51 characters long')
+
+  t.assert(includes(
+    validates.errorsInPrivateKey(validWIF + 'abcdefgh'),
+    'Private Key WIF can not be longer than 52 characters'
+  ), 'Private Key WIF can not be longer than 52 characters')
+
+  t.end()
 })
 
 test('validates.isBitcoinPrivateKey', (t) => {
-  const mockPrivateKey = () => {
-    const times = require('lodash/times')
-    return ('5' + times(51, () => 'x').join(''))
-  }
+  t.assert(
+    validates.isBitcoinPrivateKey(validWIF),
+    'valid WIF is valid'
+  )
 
-  t.test('returns null when BitcoinPrivateKey', (st) => {
-    const input = mockPrivateKey()
-    const actual = validates.isBitcoinPrivateKey(input)
-    const expected = null
-    st.equals(actual, expected, 'input is BitcoinPrivateKey')
-    st.end()
-  })
+  const badInputs = [42, 'x', validWIF + 'xyzabc', validWIF.substring(0, 49)]
+  badInputs.forEach((bad) => t.assert(!validates.isBitcoinPrivateKey(bad)))
 
-  t.test('returns validation message when not a String', (st) => {
-    const badInput = 42
-    const actual = validates.isBitcoinPrivateKey(badInput)
-    const regex = /must be a String/
-    st.assert(regex.test(actual), 'input must be a String')
-    st.end()
-  })
-
-  t.test('returns validation message when not beginning with "5"', (st) => {
-    const badInput = 'x'
-    const actual = validates.isBitcoinPrivateKey(badInput)
-    const regex = /begin with one of: 5, K, L/
-    st.assert(regex.test(actual), 'input must begin with a "5"')
-    st.end()
-  })
-
-  t.test('returns validation message when not 51 or 52 characters long', (st) => {
-    const input = mockPrivateKey()
-
-    function longCheck () {
-      const longInput = input + 'x'
-      const actual = validates.isBitcoinPrivateKey(longInput)
-      const regex = /be 51 or 52 characters/
-      st.assert(regex.test(actual), 'input longer than 52 characters')
-    }
-
-    function shortCheck () {
-      const shortInput = '5x'
-      const actual = validates.isBitcoinPrivateKey(shortInput)
-      const regex = /be 51 or 52 characters/
-      st.assert(regex.test(actual), 'input shorter than 51 characters')
-    }
-
-    [longCheck, shortCheck].map((x) => x())
-    st.end()
-  })
+  t.end()
 })
 
-test('validates.isInteger', (t) => {
-  t.test('returns null when Integer', (st) => {
-    const input = 42
-    const actual = validates.isInteger(input)
-    const expected = null
-    st.equals(actual, expected, 'input is Integer')
-    st.end()
-  })
-
-  t.test('returns validation message when not a Integer', (st) => {
-    const badInput = '42'
-    const actual = validates.isInteger(badInput)
-    const regex = /be a Integer/
-    st.assert(regex.test(actual), 'input must be a Integer')
-    st.end()
-  })
+test('currency validation', (t) => {
+  t.assert(validates.errorsInCurrency('satoshi').length === 0)
+  t.assert(!validates.isCurrency('usd'))
+  t.end()
 })
 
-test('validates.isString', (t) => {
-  t.test('returns null when String', (st) => {
-    const input = '42'
-    const actual = validates.isString(input)
-    const expected = null
-    st.equals(actual, expected, 'input is String')
-    st.end()
-  })
-  t.test('returns validation message when not a String', (st) => {
-    const badInput = 42
-    const actual = validates.isString(badInput)
-    const regex = /be a String/
-    st.assert(regex.test(actual), 'input must be a String')
-    st.end()
-  })
+test('integer validation', (t) => {
+  t.assert(validates.errorsInInteger('I am a lumberjack and I am ok! I sleep all night and I work all day!')[0] === 'must be a Integer')
+
+  t.assert(validates.isInteger(1))
+  t.assert(validates.isInteger(0))
+  t.assert(!validates.isInteger({ichBin: 'Objekt'}))
+  t.end()
+})
+
+test('string validation', (t) => {
+  t.assert(validates.errorsInString(12345)[0] === 'must be a String')
+  t.assert(validates.isString('lodash is amaze'))
+  t.end()
 })

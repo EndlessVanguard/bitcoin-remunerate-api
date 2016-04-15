@@ -42,8 +42,11 @@ test('route GET /0/content/:contentId', (t) => {
       .expect(400)
       .end((error, res) => {
         const validates = require('utils/validates')
+        const isEqual = require('lodash/isEqual')
         if (error) { return st.end(error) }
-        st.equals(res.body.message, validates.isBitcoinAddress(badAddress), 'generated bitcoin address to pay')
+
+        st.assert(isEqual(validates.errorsInBitcoinAddress(badAddress),
+                          res.body.errors))
         st.end()
       })
   })
@@ -53,7 +56,7 @@ test('route POST /0/content', (t) => {
   const mockData = () => ({
     contentId: 'mein-artikle',
     content: 'eins zwei dri',
-    payoutAddress: require('test/helper').mockAddress()
+    payoutAddress: require('test/helper').validAddress
   })
 
   const spyOnContentSave = () => require('test/helper').spyOn(
