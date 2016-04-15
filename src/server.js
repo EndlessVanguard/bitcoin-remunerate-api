@@ -86,7 +86,6 @@ const contentPostedResponseHelpers = {
       // TODO: need a template of the current build for web client and inject contentId
       return 'js-snippet'
     } else if (returnType === 'url') {
-      // FIXME api version
       return `https://api.momona.com/${apiVersion}/content/${contentRecord.contentId}`
     } else {
       throw Error(`invalid returnType ${returnType}`)
