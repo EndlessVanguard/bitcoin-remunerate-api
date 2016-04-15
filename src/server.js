@@ -1,9 +1,10 @@
 const isNil = require('lodash/isNil')
 
-const blockchainApi = require('utils/blockchainApi')
-const predicates = require('utils/predicates')
 const Content = require('records/Content')
 const Invoice = require('records/Invoice')
+const blockchainApi = require('utils/blockchainApi')
+const predicates = require('utils/predicates')
+const validates = require('utils/validates')
 
 const app = require('express')()
 app.use(require('cors')())
@@ -27,7 +28,7 @@ app.get('/0/content/:contentId', (req, res) => {
     return res.status(402).json(sendPrompt(newAddress))
   }
   if (!predicates.isBitcoinAddress(address)) {
-    return res.status(400).json(sendMessage(predicates.isBitcoinAddress(address, true)))
+    return res.status(400).json(sendMessage(validates.isBitcoinAddress(address)))
   }
 
   Invoice.isAddressAndContentPaired(address, contentId)

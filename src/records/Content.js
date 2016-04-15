@@ -1,11 +1,11 @@
 const properties = (function makeProperties () {
-  const predicates = require('utils/predicates')
+  const validates = require('utils/validates')
   return Object.freeze({
-    contentId: predicates.isString,
-    content: predicates.isString,
-    price: predicates.isInteger,
-    currency: predicates.isCurrency,
-    payoutAddress: predicates.isBitcoinAddress
+    contentId: validates.isString,
+    content: validates.isString,
+    price: validates.isInteger,
+    currency: validates.isCurrency,
+    payoutAddress: validates.isBitcoinAddress
   })
 }())
 
