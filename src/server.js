@@ -40,7 +40,7 @@ app.get('/0/content/:contentId', (req, res) => {
       return blockchainApi.lookup(address)
         .then((rawAddressInformation) => {
           const body = JSON.parse(rawAddressInformation.body)
-          if (isPaid(body)) {
+          if (blockchainApi.isPaid(body)) {
             Invoice.markAsPaid(address)
             res.status(200).send(Content.fetchContent(contentId))
           } else {
@@ -113,17 +113,6 @@ const sendPrompt = (address) => ({
 const sendMessage = (message) => ({
   message: message
 })
-
-// helper for data fetch
-
-function isPaid (data) {
-  if (data === 'Input too short' || data === 'Checksum does not validate') {
-    return false
-  }
-  const price = 1
-  const isPaid = data.total_received > price
-  return isPaid
-}
 
 module.exports = {
   app: app,
