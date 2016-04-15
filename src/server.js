@@ -18,10 +18,10 @@ app.get('/', (req, res) => (
 ))
 
 // api for content
-app.get('/0/content', (req, res) => (
+app.get(`/${apiVersion}/content`, (req, res) => (
   res.status(400).json(sendMessage('missing contentId. Remember to put something after the /!'))
 ))
-app.get('/0/content/:contentId', (req, res) => {
+app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
   const address = req.query.address
   const contentId = req.params.contentId
 
@@ -93,20 +93,20 @@ const contentPostedResponseHelpers = {
   }
 }
 
-app.post('/0/content', (req, res) => {
-  const returnType = contentPostedResponseHelpers.parseResponseType(req.query.return, contentPostedResponseHelpers.contentResponseTypes)
+app.post(`/${apiVersion}/content`, (req, res) => {
+  const responseType = contentPostedResponseHelpers.parseResponseType(req.query.return, contentPostedResponseHelpers.contentResponseTypes)
 
-  if (isNil(returnType)) {
+  if (isNil(responseType)) {
     return res.status(400).json(
       sendMessage(
-        `returnType ${req.query.return} not supported. Available options ${contentPostedResponseHelpers.contentResponseTypes}`
+        `Response type ${req.query.return} not supported. Available options ${contentPostedResponseHelpers.contentResponseTypes}`
       )
     )
   }
 
   return Content.save(req.body)
     .then((contentRecord) => {
-      res.status(200).send(contentPostedResponseHelpers.formatResponseByType(contentRecord, returnType))
+      res.status(200).send(contentPostedResponseHelpers.formatResponseByType(contentRecord, responseType))
     })
     .catch((error) => {
       res.status(400).json(sendMessage(error.message))

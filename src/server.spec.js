@@ -134,14 +134,14 @@ test('route POST /0/content', (t) => {
   })
 
   t.test('invalid return query', (st) => {
-    const badReturnType = 'nope'
-    request(api.app).post(apiUrl(`?return=${badReturnType}`))
+    const badResponseType = 'nope'
+    request(api.app).post(apiUrl(`?return=${badResponseType}`))
       .expect('Content-Type', /json/)
       .expect(400)
       .end((error, res) => {
         if (error) { return st.end(error) }
-        const regex = RegExp(`returnType ${badReturnType} not supported`)
-        st.assert(regex.test(res.body.message), 'return query must be supported returnType')
+        const regex = RegExp(`Response type ${badResponseType} not supported`)
+        st.assert(regex.test(res.body.message), 'response query must be supported responseType')
         st.end()
       })
   })

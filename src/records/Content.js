@@ -32,7 +32,6 @@ const Content = {
     return Content.find(contentId).content
   },
 
-  // validation
   isValid: (data) => require('utils/isValid')(properties, data, { throwErrors: false }),
   validate: (data) => require('utils/isValid')(properties, data, { throwErrors: true })
 }
