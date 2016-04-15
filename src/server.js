@@ -1,5 +1,7 @@
 const isNil = require('lodash/isNil')
 
+const apiVersion = 0
+
 const blockchainApi = require('utils/blockchainApi')
 const predicates = require('utils/predicates')
 const Content = require('records/Content')
@@ -11,7 +13,7 @@ app.use(require('body-parser').json({ limit: '500kb' }))
 
 // index
 app.get('/', (req, res) => (
-  res.status(200).send('Welcome to Momona! Do GET /0/content/:contentId')
+  res.status(200).send(`Welcome to Momona! Do GET /${apiVersion}/content/:contentId`)
 ))
 
 // api for content
@@ -63,35 +65,48 @@ app.get('/0/content/:contentId', (req, res) => {
     })
 })
 
-const contentReturnTypes = Object.freeze([
-  'id', 'js', 'url'
-])
-const parseReturnType = (returnType, knownReturnTypes) => {
-  if (isNil(returnType)) return 'url'
-  returnType = returnType.toLowerCase()
-  if (knownReturnTypes.indexOf(returnType) === -1) return null
-  return returnType
-}
-const sendAsReturnType = (contentRecord, returnType) => {
-  if (returnType === 'id') {
-    return contentRecord.contentId
-  } else if (returnType === 'js') {
-    // TODO: need a template of the current build for web client and inject contentId
-    return 'js-snippet'
-  } else if (returnType === 'url') {
-    return `https://api.momona.com/content/${contentRecord.contentId}`
-  } else {
-    throw Error(`invalid returnType ${returnType}`)
+// When POST-ing new content, you can specify ?return=[id|js|url].
+// Depending on what you chose, your response will be either
+// * The newly created contentId
+// * A Javascript snippet for embedding
+// * A url for you to GET to get the content
+const contentPostedResponseHelpers = {
+  contentResponseTypes: Object.freeze(['id', 'js', 'url']),
+  parseResponseType: (returnType, knownReturnTypes) => {
+    if (isNil(returnType)) return 'url'
+    returnType = returnType.toLowerCase()
+    if (knownReturnTypes.indexOf(returnType) === -1) return null
+    return returnType
+  },
+  formatResponseByType: (contentRecord, returnType) => {
+    if (returnType === 'id') {
+      return contentRecord.contentId
+    } else if (returnType === 'js') {
+      // TODO: need a template of the current build for web client and inject contentId
+      return 'js-snippet'
+    } else if (returnType === 'url') {
+      // FIXME api version
+      return `https://api.momona.com/${apiVersion}/content/${contentRecord.contentId}`
+    } else {
+      throw Error(`invalid returnType ${returnType}`)
+    }
   }
 }
+
 app.post('/0/content', (req, res) => {
-  const returnType = parseReturnType(req.query.return, contentReturnTypes)
+  const returnType = contentPostedResponseHelpers.parseResponseType(req.query.return, contentPostedResponseHelpers.contentResponseTypes)
+
   if (isNil(returnType)) {
-    return res.status(400).json(sendMessage(`returnType ${req.query.return} not supported. Available options ${contentReturnTypes}`))
+    return res.status(400).json(
+      sendMessage(
+        `returnType ${req.query.return} not supported. Available options ${contentPostedResponseHelpers.contentResponseTypes}`
+      )
+    )
   }
+
   return Content.save(req.body)
     .then((contentRecord) => {
-      res.status(200).send(sendAsReturnType(contentRecord, returnType))
+      res.status(200).send(contentPostedResponseHelpers.formatResponseByType(contentRecord, returnType))
     })
     .catch((error) => {
       res.status(400).json(sendMessage(error.message))
@@ -104,7 +119,6 @@ const server = app.listen(port, function () {
 })
 
 // helper for response formats
-
 const sendPrompt = (address) => ({
   display: 'payment.prompt',
   address: address

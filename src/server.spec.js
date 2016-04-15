@@ -1,9 +1,11 @@
 const test = require('tape')
 const request = require('supertest')
 
+const apiVersion = 0
+
 const apiUrl = (path) => {
   if (!path) path = ''
-  return `/0/content/${path}`
+  return `/${apiVersion}/content/${path}`
 }
 
 const api = require('./server')
@@ -70,7 +72,7 @@ test('route POST /0/content', (t) => {
       .end((error, res) => {
         if (error) st.end(error)
         st.assert(contentRecordSpy.called(), 'Content.save was called')
-        const expected = `https://api.momona.com/content/${reqData.contentId}`
+        const expected = `https://api.momona.com/${apiVersion}/content/${reqData.contentId}`
         st.equals(res.text, expected, 'a URL to GET the content')
         contentRecordSpy.restore()
         st.end()
@@ -121,7 +123,7 @@ test('route POST /0/content', (t) => {
       .end((error, res) => {
         if (error) st.end(error)
         st.assert(contentRecordSpy.called(), 'Content.save was called')
-        const expected = `https://api.momona.com/content/${reqData.contentId}`
+        const expected = `https://api.momona.com/${apiVersion}/content/${reqData.contentId}`
         st.equals(res.text, expected, 'a URL to GET the content')
         contentRecordSpy.restore()
         st.end()
