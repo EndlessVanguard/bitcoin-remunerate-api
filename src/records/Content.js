@@ -12,6 +12,14 @@ const properties = (function makeProperties () {
 const redisKey = 'content'
 
 const Content = {
+  properties: {
+    contentId: validates.errorsInString,
+    content: validates.errorsInString,
+    price: validates.errorsInInteger,
+    currency: validates.errorsInCurrency,
+    payoutAddress: validates.errorsInBitcoinAddress
+  },
+
   // database
   find: (contentId) => {
     return require('config/content-database.js')[contentId]
@@ -19,19 +27,32 @@ const Content = {
   save: (data) => {
     const redisDb = require('config/redis')
     return new Promise((resolve, reject) => {
-      // Content.validate(data)
       if (Content.isValidContent(data)) {
         redisDb.hset(redisKey, data.contentId, JSON.stringify(data), (error) => {
           if (error) { reject(error) }
           resolve(data)
         })
       } else {
-        reject(data)
+        reject(Content.errorsInContent(data))
       }
     })
   },
 
   fetchContent: (contentId) => Content.find(contentId).content,
+
+  errorsInContent: (contentData) => {
+    // Returns a list of all errors in a content
+    const flatMap = require('lodash/flatMap')
+    return flatMap(
+      Object.keys(Content.properties),
+      (contentField) => {
+        const errorGeneratingFn = Content.properties[contentField]
+        return errorGeneratingFn(
+          contentData[contentField]
+        )
+      }
+    )
+  },
 
   isValidContent: (contentData) => {
     const props = {
