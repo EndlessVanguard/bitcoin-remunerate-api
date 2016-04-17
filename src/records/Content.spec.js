@@ -11,7 +11,7 @@ test('isValidContent', (t) => {
       currency: 'satoshi',
       payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
     }),
-    'valid content record is valid')
+    'Valid Content record is valid')
   t.assert(
     !Content.isValidContent({
       content: 'This is a cool article about something interesting',
@@ -19,7 +19,8 @@ test('isValidContent', (t) => {
       currency: 'satoshi',
       payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
     }),
-    'content missing contentId is invalid')
+    'Content is missing contentId is invalid')
+  console.log('\n\n\n')
   t.assert(
     !Content.isValidContent({
       contentId: 'my-cool-content',
@@ -27,7 +28,7 @@ test('isValidContent', (t) => {
       currency: 'satoshi',
       payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
     }),
-    'content missing content is invalid')
+    'Content is missing content is invalid')
   t.assert(
     !Content.isValidContent({
       contentId: 'my-cool-content',
@@ -36,7 +37,7 @@ test('isValidContent', (t) => {
       currency: 'satoshi',
       payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
     }),
-    'price can not be string')
+    'Content price can not be string')
   t.end()
 })
 

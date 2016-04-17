@@ -54,21 +54,8 @@ const Content = {
     )
   },
 
-  isValidContent: (contentData) => {
-    const props = {
-      contentId: validates.isString,
-      content: validates.isString,
-      price: validates.isInteger,
-      currency: validates.isCurrency,
-      payoutAddress: validates.isBitcoinAddress
-    }
+  isValidContent: (contentData) => Content.errorsInContent(contentData).length === 0,
 
-    return Object.keys(props).map((contentField) => {
-      const predicate = props[contentField]
-
-      return predicate(contentData[contentField])
-    }).reduce((prevVal, nextVal) => prevVal && nextVal) // reduce to single bool
-  },
   isValid: (data) => require('utils/isValid')(properties, data, { throwErrors: false }),
   validate: (data) => require('utils/isValid')(properties, data, { throwErrors: true })
 }
