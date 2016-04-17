@@ -1,16 +1,16 @@
-const properties = (function makeProperties () {
-  const validates = require('utils/validates')
-  return Object.freeze({
-    address: validates.isBitcoinAddress,
-    contentId: validates.isString,
-    privateKey: validates.isBitcoinPrivateKey
-    // optional: paymentTimestamp: validates.isInteger
-  })
-}())
+const validates = require('utils/validates')
 
 const redisKey = 'invoice'
+const isValid = require('utils/isValid')
 
 const Invoice = {
+  properties: {
+    address: validates.errorsInBitcoinAddress,
+    contentId: validates.errorsInString,
+    privateKey: validates.errorsInPrivateKey
+    // optional: paymentTimestamp: validates.errorsInInteger
+  },
+
   // database
   find: (address) => {
     const redisDb = require('config/redis')
@@ -32,8 +32,11 @@ const Invoice = {
   },
   save: (data) => {
     const redisDb = require('config/redis')
-    Invoice.validate(data)
-    redisDb.hset(redisKey, data.address, JSON.stringify(data))
+    if (Invoice.isValidInvoice(data)) {
+      redisDb.hset(redisKey, data.address, JSON.stringify(data))
+      return true
+    }
+    return false
   },
 
   // helpers
@@ -70,8 +73,8 @@ const Invoice = {
   },
 
   // validation
-  isValid: (data) => require('utils/isValid')(properties, data, { throwErrors: false }),
-  validate: (data) => require('utils/isValid')(properties, data, { throwErrors: true })
+  errorsInInvoice: (invoiceData) => isValid.errorsInRecord(invoiceData, Invoice.properties),
+  isValidInvoice: (invoiceData) => isValid.isValidRecord(invoiceData, Invoice.properties)
 }
 
 module.exports = Invoice

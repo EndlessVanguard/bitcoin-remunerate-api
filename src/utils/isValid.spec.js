@@ -1,71 +1,61 @@
 const test = require('tape')
-
 const isValid = require('./isValid')
 
-test('isValid', (t) => {
-  t.test('options.throwErrors flag false', (st) => {
-    const options = { throwErrors: false }
+const isEqual = require('lodash/isEqual')
+const validates = require('../utils/validates.js')
+const mockProperties = {
+  contentId: validates.errorsInString,
+  content: validates.errorsInString,
+  price: validates.errorsInInteger,
+  currency: validates.errorsInCurrency,
+  payoutAddress: validates.errorsInBitcoinAddress
+}
 
-    st.test('returns true when all properties predicates are valid in data', (sst) => {
-      const mockProperties = { id: () => null }
-      const mockData = { id: 42 }
-      const actual = isValid(mockProperties, mockData, options)
-      const expected = true
-      sst.equal(actual, expected, 'properties validate data')
-      sst.end()
-    })
+test('isValidRecord', (t) => {
+  t.assert(isValid.isValidRecord({
+    contentId: 'my-cool-content',
+    content: 'This is a cool article about something interesting',
+    price: 10000,
+    currency: 'satoshi',
+    payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
+  }, mockProperties))
+  t.end()
+})
 
-    st.test('returns false when a property predicate fails', (sst) => {
-      const mockProperties = { id: () => 'a reason' }
-      const mockData = { id: 42 }
-      const actual = isValid(mockProperties, mockData, options)
-      const expected = false
-      sst.equal(actual, expected, 'all property predicates must pass')
-      sst.end()
-    })
+test('errorsInRecord', (t) => {
+  t.assert(
+    isEqual(
+      isValid.errorsInRecord({
+        contentId: 'my-cool-content',
+        content: 'This is a cool article about something interesting',
+        price: 10000,
+        currency: 'satoshi',
+        payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
+      }, mockProperties),
+      []
+    ), 'Valid content contains no errors'
+  )
 
-    st.test('returns false when a property is undefined in data', (sst) => {
-      const mockProperties = { id: () => null }
-      const mockData = { id: undefined }
-      const actual = isValid(mockProperties, mockData, options)
-      const expected = false
-      sst.equal(actual, expected, 'no properties can be undefined in data')
-      sst.end()
-    })
-  })
+  t.equal(
+    isValid.errorsInRecord({
+      contentId: 'my-cool-content',
+      content: 'This is a cool article about something interesting',
+      price: 10000,
+      payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
+    }, mockProperties).length,
+    1,
+    'Valid content contains no errors'
+  )
 
-  t.test('options.throwErrors flag true', (st) => {
-    const options = { throwErrors: true }
+  t.equal(
+    isValid.errorsInRecord({
+      contentId: 'my-cool-content',
+      content: 'This is a cool article about something interesting',
+      payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
+    }, mockProperties).length,
+    2,
+    'Valid content contains no errors'
+  )
 
-    st.test('returns null when all properties predicates are valid in data', (sst) => {
-      const mockProperties = { id: () => null }
-      const mockData = { id: 42 }
-      const actual = isValid(mockProperties, mockData, options)
-      const expected = null
-      sst.equal(actual, expected, 'properties validate data')
-      sst.end()
-    })
-
-    st.test('errors when a properties property returns a value for data', (sst) => {
-      const mockProperties = { id: () => 'a reason' }
-      const mockData = { id: 42 }
-      sst.throws(
-        () => isValid(mockProperties, mockData, options),
-        /Validation: property "id" 42, a reason/,
-        'all property predicates must pass'
-      )
-      sst.end()
-    })
-
-    st.test('errors when a Record property is undefined in data', (sst) => {
-      const mockProperties = { id: () => null }
-      const mockDataUndefined = { id: undefined }
-      sst.throws(
-        () => isValid(mockProperties, mockDataUndefined, options),
-        /Validation: missing property "id"/,
-        'no properties can be undefined in data'
-      )
-      sst.end()
-    })
-  })
+  t.end()
 })

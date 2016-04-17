@@ -2,10 +2,13 @@ const isString = require('lodash/isString')
 
 const errorsInBitcoinAddress = (address) => {
   var err = []
-  if (!/^[1]/.test(address)) { err.push('must begin with a "1" or "3"') }
-  if (!isString(address)) { err.push('must be a String') }
-  if (address.length < 26) { err.push('can not be shorter than 26 chars') }
-  if (address.length > 35) { err.push('can not be longer than 35 chars') }
+  if (!/^[1]/.test(address)) { err.push('Bitcoin Address must begin with a "1" or "3"') }
+  if (!isString(address)) {
+    err.push('Bitcoin Address must be a String')
+  } else {
+    if (address.length < 26) { err.push('Bitcoin Address can not be shorter than 26 chars') }
+    if (address.length > 35) { err.push('Bitcoin Address can not be longer than 35 chars') }
+  }
   return err
 }
 
@@ -20,7 +23,7 @@ const errorsInPrivateKey = (privateKey) => {
 
 const errorsInCurrency = (currency) => {
   const err = []
-  if (currency !== 'satoshi') { err.push('must be "satoshi"') }
+  if (currency !== 'satoshi') { err.push('Currency must be "satoshi"') }
   return err
 }
 

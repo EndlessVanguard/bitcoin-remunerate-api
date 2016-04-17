@@ -1,13 +1,5 @@
-const validates = require('utils/validates')
-const properties = (function makeProperties () {
-  return Object.freeze({
-    contentId: validates.isString,
-    content: validates.isString,
-    price: validates.isInteger,
-    currency: validates.isCurrency,
-    payoutAddress: validates.isBitcoinAddress
-  })
-}())
+const validates = require('../utils/validates.js')
+const isValid = require('../utils/isValid')
 
 const redisKey = 'content'
 
@@ -40,24 +32,8 @@ const Content = {
 
   fetchContent: (contentId) => Content.find(contentId).content,
 
-  errorsInContent: (contentData) => {
-    // Returns a list of all errors in a content
-    const flatMap = require('lodash/flatMap')
-    return flatMap(
-      Object.keys(Content.properties),
-      (contentField) => {
-        const errorGeneratingFn = Content.properties[contentField]
-        return errorGeneratingFn(
-          contentData[contentField]
-        )
-      }
-    )
-  },
-
-  isValidContent: (contentData) => Content.errorsInContent(contentData).length === 0,
-
-  isValid: (data) => require('utils/isValid')(properties, data, { throwErrors: false }),
-  validate: (data) => require('utils/isValid')(properties, data, { throwErrors: true })
+  errorsInContent: (contentData) => isValid.errorsInRecord(contentData, Content.properties),
+  isValidContent: (contentData) => isValid.isValidRecord(contentData, Content.properties)
 }
 
 module.exports = Content

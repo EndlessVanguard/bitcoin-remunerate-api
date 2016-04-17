@@ -6,37 +6,39 @@ const validates = require('./validates')
 const validAddress = require('../test/helper.js').validAddress
 
 test('validates.errorsInBitcoinAddress', (t) => {
-  t.assert(isEqual(validates.errorsInBitcoinAddress(validAddress), []),
-           'no errors in valid address')
+  t.assert(
+    isEqual(validates.errorsInBitcoinAddress(validAddress), []),
+    'no errors in valid address'
+  )
 
   const addressWithBadBeginning = '79qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
   t.assert(isEqual(
     validates.errorsInBitcoinAddress(addressWithBadBeginning),
-    ['must begin with a "1" or "3"']
-  ), 'must begin with 1 or 3')
+    ['Bitcoin Address must begin with a "1" or "3"']
+  ), 'Bitcoin Address must begin with 1 or 3')
 
   t.assert(includes(
     validates.errorsInBitcoinAddress(2381),
-    'must be a String'
-  ), 'must be String')
+    'Bitcoin Address must be a String'
+  ), 'Bitcoin Address must be String')
 
   const tooLongAddress = '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBwtrhortyihjtyhoytrg'
   t.assert(isEqual(
     validates.errorsInBitcoinAddress(tooLongAddress),
-    ['can not be longer than 35 chars']
-  ), 'can not be longer than 35 chars')
+    ['Bitcoin Address can not be longer than 35 chars']
+  ), 'Bitcoin Address can not be longer than 35 chars')
 
   t.assert(isEqual(
     validates.errorsInBitcoinAddress(validAddress.substring(0, 25)),
-    ['can not be shorter than 26 chars']
-  ), 'can not be shorter than 26 chars')
+    ['Bitcoin Address can not be shorter than 26 chars']
+  ), 'Bitcoin Address can not be shorter than 26 chars')
 
   t.end()
 })
 
 test('validates.isBitcoinAddress', (t) => {
   t.assert(validates.isBitcoinAddress(validAddress), 'valid address is valid')
-  t.assert(!validates.isBitcoinAddress('x'), 'addresses not starting with 1 or 3 are invalid')
+  t.assert(!validates.isBitcoinAddress('x'), 'Bitcoin Address not starting with 1 or 3 are invalid')
   t.assert(!validates.isBitcoinAddress(1235), 'non-string addresses are invalid')
 
   t.end()

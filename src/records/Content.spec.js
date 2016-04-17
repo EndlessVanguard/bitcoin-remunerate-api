@@ -20,7 +20,6 @@ test('isValidContent', (t) => {
       payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
     }),
     'Content is missing contentId is invalid')
-  console.log('\n\n\n')
   t.assert(
     !Content.isValidContent({
       contentId: 'my-cool-content',

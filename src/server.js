@@ -47,7 +47,6 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
             Invoice.markAsPaid(address)
             res.status(200).send(Content.fetchContent(contentId))
           } else {
-            console.log('not paid')
             res.status(402).json(sendPrompt(address))
           }
         })
@@ -104,12 +103,26 @@ app.post(`/${apiVersion}/content`, (req, res) => {
     )
   }
 
+  /* const data = {
+     price: 4000,
+     currency: 'satoshi',
+     payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw',
+     contentId: 'my-cool-content',
+     content: 'lalall'
+     } */
+
+  /*   console.log(Content.isValidContent(data)) */
+  /*   console.log(Content.errorsInContent(data)) */
+
+  // FIXME Martins debugging note
+  // This does not work, because req.body is unset.
+  // Otherwise this code works fine. Try it but passing data to Content.save
   return Content.save(req.body)
     .then((contentRecord) => {
       res.status(200).send(contentPostedResponseHelpers.formatResponseByType(contentRecord, responseType))
     })
     .catch((error) => {
-      res.status(400).json(sendMessage(error.message))
+      res.status(400).json(sendMessage(error))
     })
 })
 
