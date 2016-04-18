@@ -11,13 +11,6 @@ const apiUrl = (path) => {
 const api = require('./server')
 
 test('route GET /0/content/:contentId', (t) => {
-  t.test('without contentId param', (st) => {
-    request(api.app).get(apiUrl())
-      .expect('Content-Type', /json/)
-      .expect(400, { message: 'missing contentId. Remember to put something after the /!' })
-      .end(st.end)
-  })
-
   // TODO: this test is hanging..
   // t.test('without address query', (st) => {
   //   const contentId = 'mein-artikle'

@@ -10,8 +10,8 @@ const validates = require('utils/validates')
 
 const app = require('express')()
 app.use(require('cors')())
-app.use(require('body-parser').json({ limit: '500kb' }))
-
+app.use(require('body-parser').urlencoded())
+app.use(require('body-parser').json())
 // index
 app.get('/', (req, res) => (
   res.status(200).send(`Welcome to Momona! Do GET /${apiVersion}/content/:contentId`)
@@ -103,20 +103,8 @@ app.post(`/${apiVersion}/content`, (req, res) => {
     )
   }
 
-  /* const data = {
-     price: 4000,
-     currency: 'satoshi',
-     payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw',
-     contentId: 'my-cool-content',
-     content: 'lalall'
-     } */
+  req.body.price = parseInt(req.body.price)
 
-  /*   console.log(Content.isValidContent(data)) */
-  /*   console.log(Content.errorsInContent(data)) */
-
-  // FIXME Martins debugging note
-  // This does not work, because req.body is unset.
-  // Otherwise this code works fine. Try it but passing data to Content.save
   return Content.save(req.body)
     .then((contentRecord) => {
       res.status(200).send(contentPostedResponseHelpers.formatResponseByType(contentRecord, responseType))

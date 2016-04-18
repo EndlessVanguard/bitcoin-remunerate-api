@@ -5,11 +5,25 @@ const validates = require('./validates')
 
 const validAddress = require('../test/helper.js').validAddress
 
+test('validates.errorsInContentId', (t) => {
+  t.assert(isEqual(validates.errorsInContentId('valid-content-id'), []))
+
+  t.assert(isEqual(validates.errorsInContentId(),
+                   ['contentId must be string']))
+
+  t.assert(isEqual(validates.errorsInContentId('invalid content id'),
+                   ['contentId can not contain spaces']))
+
+  t.assert(includes(validates.errorsInContentId(4436),
+                    'contentId must be String, is Number'))
+
+  t.end()
+})
+
 test('validates.errorsInBitcoinAddress', (t) => {
   t.assert(
     isEqual(validates.errorsInBitcoinAddress(validAddress), []),
-    'no errors in valid address'
-  )
+    'no errors in valid address')
 
   const addressWithBadBeginning = '79qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
   t.assert(isEqual(

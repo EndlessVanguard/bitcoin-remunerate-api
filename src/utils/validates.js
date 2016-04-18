@@ -1,4 +1,5 @@
 const isString = require('lodash/isString')
+const isNumber = require('lodash/isNumber')
 
 const errorsInBitcoinAddress = (address) => {
   var err = []
@@ -44,5 +45,13 @@ module.exports = {
   isInteger: isInteger,
 
   errorsInString: (str) => (isString(str) ? [] : ['must be a String']),
-  isString: isString
+  isString: isString,
+
+  errorsInContentId: (contentId) => {
+    var err = []
+    if (isNumber(contentId)) { err.push('contentId must be String, is Number') }
+    if (!isString(contentId)) { err.push('contentId must be string') }
+    if (/ /.test(contentId)) { err.push('contentId can not contain spaces') }
+    return err
+  }
 }

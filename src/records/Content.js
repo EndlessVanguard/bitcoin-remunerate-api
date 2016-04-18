@@ -5,7 +5,7 @@ const redisKey = 'content'
 
 const Content = {
   properties: {
-    contentId: validates.errorsInString,
+    contentId: validates.errorsInContentId,
     content: validates.errorsInString,
     price: validates.errorsInInteger,
     currency: validates.errorsInCurrency,
