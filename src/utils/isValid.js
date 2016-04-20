@@ -1,14 +1,8 @@
 const flatMap = require('lodash/flatMap')
 
 const errorsInRecord = (recordData, properties) => {
-  // Returns a list of all errors in a record
-  return flatMap(
-    Object.keys(properties),
-    (field) => {
-      const errorGeneratingFn = properties[field]
-      return errorGeneratingFn(recordData[field])
-    }
-  )
+  return flatMap(properties,
+                 (errorGeneratingFn, field) => errorGeneratingFn(recordData[field]))
 }
 
 const isValidRecord = (recordData, properties) => {
