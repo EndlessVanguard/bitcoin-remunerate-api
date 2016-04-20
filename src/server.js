@@ -5,7 +5,6 @@ const apiVersion = 0
 const Content = require('records/Content')
 const Invoice = require('records/Invoice')
 const blockchainApi = require('utils/blockchainApi')
-const predicates = require('utils/predicates')
 const validates = require('utils/validates')
 
 const app = require('express')()
@@ -29,7 +28,7 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
     const newAddress = Invoice.newKeypair(contentId)
     return res.status(402).json(sendPrompt(newAddress))
   }
-  if (!predicates.isBitcoinAddress(address)) {
+  if (!validates.isBitcoinAddress(address)) {
     return res.status(400).json({errors: validates.errorsInBitcoinAddress(address)})
   }
 
