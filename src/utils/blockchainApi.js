@@ -34,7 +34,17 @@ function broadcastTransaction (transactionHex) {
   })
 }
 
+function isPaid (blockchainHttpResponse) {
+  if (blockchainHttpResponse === 'Input too short' || blockchainHttpResponse === 'Checksum does not validate') {
+    return false
+  }
+  const price = 1
+  const isPaid = blockchainHttpResponse.total_received > price
+  return isPaid
+}
+
 module.exports = {
   broadcastTransaction: broadcastTransaction,
-  lookup: lookup
+  lookup: lookup,
+  isPaid: isPaid
 }

@@ -1,7 +1,7 @@
 // A simple script that sends all bitcoin associated with the arguments to the contentId's payoutAddress
-const transaction = require("../src/utils/transaction")
+const transaction = require('../src/utils/transaction')
 
-function payoutContent (contentId){
+function payoutContent (contentId) {
   console.log('payout', contentId)
   return transaction.payoutContent(contentId)
 }
@@ -11,7 +11,7 @@ process.argv.forEach((val, index, array) => {
     return false
   }
   payoutContent(val)
-  .then(result => {
+  .then((result) => {
     console.log('result', result)
     process.exit(0)
   })

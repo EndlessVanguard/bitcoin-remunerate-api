@@ -5,21 +5,23 @@
 
 A scheme for trustless, decentralized, anonymous, remuneration for content creators.
 
-## Tech statement
-An http header from the server hosting something,
-
 ## Dependencies
 * Node.js (tested with `v5.6.0`)
 * Redis (tested with `3.0.7`)
 
 ## routes
-* /secret-article
+All routes are prepended with a api version number. It is currently `/0/`
+
+* get /content/secret-article
 => you get an html response body, with a http header PAYABLE_ADDRESS that should receive funds before access is granted to the 'secret article'
 
-* /secret-article?key=<PAYABLE_ADDRESS>
+* GET /content/secret-article?key=<PAYABLE_ADDRESS>
 => this PAYABLE_ADDRESS is both the destination wallet and id for the user to get access
 - if adddress has history of payment, then grant access
 - else patiently waiting
+
+* POST /content
+Post new content. `curl` example: `curl --data "contentId=my-cool-id&content=this%20is%20SPARTA&price=10000&currency=satoshi&payoutAddress=19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw" localhost:3000/0/content`
 
 ## Generating PAYABLE_ADDRESS for new visitors
 1. generate a public and private bitcoin key
