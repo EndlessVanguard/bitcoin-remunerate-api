@@ -4,12 +4,12 @@ const redisKey = 'invoice'
 const isValid = require('utils/isValid')
 
 const Invoice = {
-  properties: {
+  properties: Object.freeze({
     address: validates.errorsInBitcoinAddress,
     contentId: validates.errorsInString,
     privateKey: validates.errorsInPrivateKey
     // optional: paymentTimestamp: validates.errorsInInteger
-  },
+  }),
 
   // database
   find: (address) => {
@@ -76,7 +76,5 @@ const Invoice = {
   errorsInInvoice: (invoiceData) => isValid.errorsInRecord(invoiceData, Invoice.properties),
   isValidInvoice: (invoiceData) => isValid.isValidRecord(invoiceData, Invoice.properties)
 }
-
-Invoice.properties = Object.freeze(Invoice.properties)
 
 module.exports = Invoice

@@ -1,16 +1,16 @@
-const validates = require('../utils/validates.js')
-const isValid = require('../utils/isValid')
+const validates = require('utils/validates.js')
+const isValid = require('utils/isValid')
 
 const redisKey = 'content'
 
 const Content = {
-  properties: {
+  properties: Object.freeze({
     contentId: validates.errorsInContentId,
     content: validates.errorsInString,
     price: validates.errorsInInteger,
     currency: validates.errorsInCurrency,
     payoutAddress: validates.errorsInBitcoinAddress
-  },
+  }),
 
   // database
   find: (contentId) => {
@@ -35,7 +35,5 @@ const Content = {
   errorsInContent: (contentData) => isValid.errorsInRecord(contentData, Content.properties),
   isValidContent: (contentData) => isValid.isValidRecord(contentData, Content.properties)
 }
-
-Content.properties = Object.freeze(Content.properties)
 
 module.exports = Content
