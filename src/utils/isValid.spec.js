@@ -1,72 +1,62 @@
 const test = require('tape')
-
+const R = require('ramda')
 const isValid = require('./isValid')
 
-test('isValid', (t) => {
-  t.test('options.throwErrors flag false', (st) => {
-    const options = { throwErrors: false }
+const isEqual = require('lodash/isEqual')
+const validates = require('../utils/validates.js')
 
-    st.test('returns true when all properties predicates are valid in data', (sst) => {
-      const mockProperties = { id: () => null }
-      const mockData = { id: 42 }
-      const actual = isValid(mockProperties, mockData, options)
-      const expected = true
-      sst.equal(actual, expected, 'properties validate data')
-      sst.end()
-    })
+const mockProperties = {
+  contentId: validates.errorsInString,
+  content: validates.errorsInString,
+  price: validates.errorsInInteger,
+  currency: validates.errorsInCurrency,
+  payoutAddress: validates.errorsInBitcoinAddress
+}
 
-    st.test('returns false when a property predicate fails', (sst) => {
-      const mockProperties = { id: () => 'a reason' }
-      const mockData = { id: 42 }
-      const actual = isValid(mockProperties, mockData, options)
-      const expected = false
-      sst.equal(actual, expected, 'all property predicates must pass')
-      sst.end()
-    })
+const validRecord = {
+  contentId: 'my-cool-content',
+  content: 'This is a cool article about something interesting',
+  price: 10000,
+  currency: 'satoshi',
+  payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
+}
 
-    st.test('returns false when a property is undefined in data', (sst) => {
-      const mockProperties = { id: () => null }
-      const mockData = { id: undefined }
-      const actual = isValid(mockProperties, mockData, options)
-      const expected = false
-      console.log(actual)
-      sst.equal(actual, expected, 'no properties can be undefined in data')
-      sst.end()
-    })
-  })
+test('isValidRecord', (t) => {
+  t.assert(isValid.isValidRecord(validRecord, mockProperties))
+  t.assert(!isValid.isValidRecord(R.dissoc('payoutAddress', validRecord), mockProperties))
+  t.end()
+})
 
-  t.test('options.throwErrors flag true', (st) => {
-    const options = { throwErrors: true }
+test('errorsInRecord', (t) => {
+  t.assert(
+    isEqual(
+      isValid.errorsInRecord(validRecord, mockProperties),
+      []
+    ), 'Valid content contains no errors'
+  )
 
-    st.test('returns null when all properties predicates are valid in data', (sst) => {
-      const mockProperties = { id: () => null }
-      const mockData = { id: 42 }
-      const actual = isValid(mockProperties, mockData, options)
-      const expected = null
-      sst.equal(actual, expected, 'properties validate data')
-      sst.end()
-    })
+  t.equal(
+    isValid.errorsInRecord(R.dissoc('currency', validRecord), mockProperties).length,
+    1,
+    'Removing required field in Record gives errors'
+  )
 
-    st.test('errors when a properties property returns a value for data', (sst) => {
-      const mockProperties = { id: () => 'a reason' }
-      const mockData = { id: 42 }
-      sst.throws(
-        () => isValid(mockProperties, mockData, options),
-        /Validation: property "id" 42, a reason/,
-        'all property predicates must pass'
-      )
-      sst.end()
-    })
+  console.log(isValid.errorsInRecord(
+    R.dissoc('currency', R.dissoc('payoutAddress', validRecord)),
+    mockProperties))
 
-    st.test('errors when a Record property is undefined in data', (sst) => {
-      const mockProperties = { id: () => null }
-      const mockDataUndefined = { id: undefined }
-      sst.throws(
-        () => isValid(mockProperties, mockDataUndefined, options),
-        /Validation: missing property "id"/,
-        'no properties can be undefined in data'
-      )
-      sst.end()
-    })
-  })
+  t.assert(
+    R.equals(
+      isValid.errorsInRecord(
+        R.dissoc('currency', R.dissoc('payoutAddress', validRecord)),
+        mockProperties
+      ),
+      ['Currency must be "satoshi"',
+       'Bitcoin Address must begin with a "1" or "3"',
+       'Bitcoin Address must be a String']
+    ),
+    'Removing many required fields yields multiple errors'
+  )
+
+  t.end()
 })

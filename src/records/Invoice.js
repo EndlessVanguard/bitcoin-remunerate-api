@@ -1,16 +1,16 @@
-const properties = (function makeProperties () {
-  const predicates = require('utils/predicates')
-  return Object.freeze({
-    address: predicates.isBitcoinAddress,
-    contentId: predicates.isString,
-    privateKey: predicates.isBitcoinPrivateKey
-    // optional: paymentTimestamp: predicates.isInteger
-  })
-}())
+const validates = require('utils/validates')
 
-const redisKey = 'content'
+const redisKey = 'invoice'
+const isValid = require('utils/isValid')
 
 const Invoice = {
+  properties: Object.freeze({
+    address: validates.errorsInBitcoinAddress,
+    contentId: validates.errorsInString,
+    privateKey: validates.errorsInPrivateKey
+    // optional: paymentTimestamp: validates.errorsInInteger
+  }),
+
   // database
   find: (address) => {
     const redisDb = require('config/redis')
@@ -32,12 +32,11 @@ const Invoice = {
   },
   save: (data) => {
     const redisDb = require('config/redis')
-    Invoice.validate(data)
-    redisDb.hset(redisKey, data.address, JSON.stringify({
-      address: data.address,
-      contentId: data.contentId,
-      privateKey: data.privateKey
-    }))
+    if (Invoice.isValidInvoice(data)) {
+      redisDb.hset(redisKey, data.address, JSON.stringify(data))
+      return true
+    }
+    return false
   },
 
   // helpers
@@ -49,10 +48,10 @@ const Invoice = {
 
   markAsPaid: (address) => {
     return Invoice.find(address)
-      .then((invoice) => {
-        if (!invoice.paymentTimestamp) {
-          invoice.paymentTimestamp = Date.now()
-          Invoice.save(invoice)
+      .then((invoiceRecord) => {
+        if (!invoiceRecord.paymentTimestamp) {
+          invoiceRecord.paymentTimestamp = Date.now()
+          Invoice.save(invoiceRecord)
         }
       })
   },
@@ -74,8 +73,8 @@ const Invoice = {
   },
 
   // validation
-  isValid: (data) => require('utils/isValid')(properties, data, { throwErrors: false }),
-  validate: (data) => require('utils/isValid')(properties, data, { throwErrors: true })
+  errorsInInvoice: (invoiceData) => isValid.errorsInRecord(invoiceData, Invoice.properties),
+  isValidInvoice: (invoiceData) => isValid.isValidRecord(invoiceData, Invoice.properties)
 }
 
 module.exports = Invoice
