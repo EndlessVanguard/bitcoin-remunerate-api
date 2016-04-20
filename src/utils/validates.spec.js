@@ -23,7 +23,11 @@ test('validates.errorsInContentId', (t) => {
 test('validates.errorsInBitcoinAddress', (t) => {
   t.assert(
     isEqual(validates.errorsInBitcoinAddress(validAddress), []),
-    'no errors in valid address')
+    'no errors in address beginning with 1')
+
+  t.assert(
+    isEqual(validates.errorsInBitcoinAddress('39qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'), []),
+    'no errors in address beginning with 3')
 
   const addressWithBadBeginning = '79qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
   t.assert(isEqual(

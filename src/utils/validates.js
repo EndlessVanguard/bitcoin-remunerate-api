@@ -3,7 +3,7 @@ const isNumber = require('lodash/isNumber')
 
 const errorsInBitcoinAddress = (address) => {
   var err = []
-  if (!/^[1]/.test(address)) { err.push('Bitcoin Address must begin with a "1" or "3"') }
+  if (!/^[13]/.test(address)) { err.push('Bitcoin Address must begin with a "1" or "3"') }
   if (!isString(address)) {
     err.push('Bitcoin Address must be a String')
   } else {
