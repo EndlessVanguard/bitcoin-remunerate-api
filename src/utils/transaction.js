@@ -1,6 +1,7 @@
 const isString = require('lodash/isString')
 const isArray = require('lodash/isArray')
 const isObject = require('lodash/isObject')
+const compact = require('lodash/compact')
 
 const fetch = {
   getLastTransactionId: (inputData, callback) => {
@@ -79,7 +80,7 @@ function buildTransaction (transactionInfo) {
   var tx = new bitcoin.TransactionBuilder()
   console.assert(isArray(inputsList), 'TypeError: inputsList not an Array')
   console.assert(inputsList.length > 0, 'inputsList is empty')
-  console.assert(isString(payoutAddress) && isString(serviceAddress))
+  console.log(isString(payoutAddress) && isString(serviceAddress))
 
   inputsList.forEach((input, index) => {
     console.assert(input, 'can not build transaction, bad input')
@@ -133,25 +134,29 @@ function addBlockchainInformationToInputs (invoiceList) {
   }).then((rawListOfTxInfo) => {
     const listOfTxInfo = rawListOfTxInfo.filter((txInfo) => txInfo.txs.length > 0)
 
-    if (listOfTxInfo.length < 1) return false
+    if (listOfTxInfo.length < 1) {
+      throw Error('listOfTxInfo is empty')
+    }
 
     // Merge the results of getLastTransactionId with invoiceList
-    return invoiceList.map((invoice, index) => {
-      if ('paymentTimestamp' in invoice) {
-        if (listOfTxInfo[index] && 'final_balance' in listOfTxInfo[index]) {
-          var txInput = invoice
-          txInput.finalBalance = listOfTxInfo[index].final_balance
+    return compact(
+      invoiceList.map((invoice, index) => {
+        if ('paymentTimestamp' in invoice) {
+          if (listOfTxInfo[index] && 'final_balance' in listOfTxInfo[index]) {
+            var txInput = invoice
+            txInput.finalBalance = listOfTxInfo[index].final_balance
 
-          // TODO make sure txs[0] is the newest, not oldest
-          txInput.lastTransaction = listOfTxInfo[index].txs[0].hash
-          console.assert(isValidInput(txInput))
+            // TODO make sure txs[0] is the newest, not oldest
+            txInput.lastTransaction = listOfTxInfo[index].txs[0].hash
+            console.assert(isValidInput(txInput), 'invalid txInput')
 
-          return txInput
+            return txInput
+          }
+        } else {
+          return null
         }
-      } else {
-        return false // contains no paymentTimestamp
-      }
-    }).filter((invoice) => !!invoice) // filter out all marked with false
+      })
+    )
   })
 }
 
@@ -159,9 +164,17 @@ function payoutContent (contentId) {
   // side effecty. Pays out all outstanding balances we owe to contentId
   const blockchainApi = require('utils/blockchainApi')
   return fetch.inputsList(contentId)
+              .then((x) => {
+                console.log(x)
+                return x
+              })
     .then(addBlockchainInformationToInputs)
+    .then((x) => {
+      console.log(x)
+      return x
+    })
     .then((inputsList) => {
-      console.assert(inputsList)
+      console.assert(inputsList, 'inputList is false after addBlockchainInformationToInputs')
       return {
         inputsList: inputsList.filter((x) => !!x),
         payoutAddress: fetch.contentPayoutAddress(contentId),

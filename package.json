@@ -34,6 +34,7 @@
     "test": "npm run lint && npm run testsuite",
     "testsuite": "NODE_PATH=./src tape src/*.spec.js src/**/*.spec.js",
     "test-watch": "nodemon -I -q -x 'npm run test' -w 'src/'",
-    "start-redis": "redis-server ./config/redis.conf"
+    "start-redis": "redis-server ./config/redis.conf",
+    "payout": "npm run repl scripts/payout-to-contentId.js"
   }
 }
