@@ -77,4 +77,6 @@ const Invoice = {
   isValidInvoice: (invoiceData) => isValid.isValidRecord(invoiceData, Invoice.properties)
 }
 
+Invoice.properties = Object.freeze(Invoice.properties)
+
 module.exports = Invoice

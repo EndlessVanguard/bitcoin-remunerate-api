@@ -36,4 +36,6 @@ const Content = {
   isValidContent: (contentData) => isValid.isValidRecord(contentData, Content.properties)
 }
 
+Content.properties = Object.freeze(Content.properties)
+
 module.exports = Content
