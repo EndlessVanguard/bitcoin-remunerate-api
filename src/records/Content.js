@@ -1,4 +1,4 @@
-const validates = require('utils/validates.js')
+const validates = require('utils/validates')
 const isValid = require('utils/isValid')
 
 const redisKey = 'content'
@@ -14,7 +14,17 @@ const Content = {
 
   // database
   find: (contentId) => {
-    return require('config/content-database.js')[contentId]
+    const redisDb = require('config/redis')
+    return new Promise((resolve, reject) => {
+      redisDb.hget(redisKey, contentId, (error, contentData) => {
+        // TODO: remove after demo time?
+        if (error || !contentData) {
+          var hardCodedContent = require('../../config/content-database')[contentId]
+          hardCodedContent ? resolve(hardCodedContent) : reject(error)
+        }
+        resolve(contentData)
+      })
+    })
   },
   save: (data) => {
     const redisDb = require('config/redis')

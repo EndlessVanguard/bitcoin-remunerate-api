@@ -11,6 +11,25 @@ const Invoice = {
     // optional: paymentTimestamp: validates.errorsInInteger
   }),
 
+  // TODO: NoSQL !== no schema :(
+  migrate: (deleteOld) => {
+    const redisDb = require('config/redis')
+    return new Promise((resolve, reject) => {
+      redisDb.keys('*', (error, contentIdList) => {
+        if (error) reject(error)
+        contentIdList.forEach((contentId, index) => {
+          if (contentId === redisKey) return
+
+          redisDb.get(contentId, (error, invoiceRecord) => {
+            if (error) reject(error)
+            redisDb.hset(redisKey, contentId, invoiceRecord, console.log)
+            if (deleteOld) redisDb.del(contentId)
+          })
+        })
+      })
+    })
+  },
+
   // database
   find: (address) => {
     const redisDb = require('config/redis')

@@ -2,27 +2,24 @@ const isString = require('lodash/isString')
 const isArray = require('lodash/isArray')
 const isObject = require('lodash/isObject')
 const compact = require('lodash/compact')
+const set = require('lodash/set')
+
+// in Satoshi
+// const minimumPayoutBalance = 100000
+const minimumPayoutBalance = 2750
 
 const fetch = {
   getLastTransactionId: (inputData, callback) => {
     var bitcoinPrivateKeyWIF = inputData.privateKey
     const blockchainApi = require('utils/blockchainApi')
     const bitcoin = require('bitcoinjs-lib')
+    // console.log('getLastTransactionId', inputData)
     const address = bitcoin.ECPair.fromWIF(bitcoinPrivateKeyWIF).getAddress()
     bitcoinPrivateKeyWIF = undefined
 
     return blockchainApi.lookup(address)
       .then((addressInfo) => callback(null, addressInfo))
       .catch((err) => callback(err, null))
-  },
-  inputsList: (contentId) => {
-    const Invoice = require('records/Invoice')
-    // To get inputsList, we need to first fetch all the keys.
-    // For each key, we need to fetch redisDb.get for that key
-    return Invoice.findAll(contentId)
-      .then((addresses) => Promise.all(
-        addresses.map((address) => Invoice.find)
-      ))
   },
   contentPayoutAddress: (contentId) => {
     const contentDb = require('config/content-database')
@@ -63,13 +60,15 @@ function addressesPaidWithinTimeRange (contentId, timestamps, inputsList) {
   })
 }
 
+// assumption is that upstream we have only allowed totals > 500
 function calculateFee (total) {
-  // TODO: is 1% a fair way to calculate the miner's fee?
-  return {
-    payout: (total * 0.9),
-    service: (total * 0.09),
-    miner: (total * 0.01)
+  const minerFee = 500
+
+  const feeMap = {
+    payout: Math.floor((total - minerFee) * 0.91),
+    service: Math.floor((total - minerFee) * 0.09)
   }
+  return set(feeMap, 'miner', (total - (feeMap['payout'] + feeMap['service'])))
 }
 
 function buildTransaction (transactionInfo) {
@@ -77,33 +76,44 @@ function buildTransaction (transactionInfo) {
   const inputsList = transactionInfo.inputsList
   const payoutAddress = transactionInfo.payoutAddress
   const serviceAddress = transactionInfo.serviceAddress
-  var tx = new bitcoin.TransactionBuilder()
+  const tx = new bitcoin.TransactionBuilder()
   console.assert(isArray(inputsList), 'TypeError: inputsList not an Array')
   console.assert(inputsList.length > 0, 'inputsList is empty')
-  console.log(isString(payoutAddress) && isString(serviceAddress))
+  console.assert(isString(payoutAddress) && isString(serviceAddress))
 
+  console.log('buildTransaction: addInput')
   inputsList.forEach((input, index) => {
     console.assert(input, 'can not build transaction, bad input')
     tx.addInput(input.lastTransaction, index)
   })
 
-  const amount = calculateFee(
-    inputsList.reduce((sum, x) => sum + x.finalBalance, 0)
-  )
+  console.log('buildTransaction: totalBalance')
+  const totalBalance = inputsList.reduce((sum, x) => sum + x.finalBalance, 0)
+  console.assert(totalBalance > minimumPayoutBalance, `totalBalance ${totalBalance} less than minimumPayoutBalance ${minimumPayoutBalance}`)
+
+  console.log('buildTransaction: calculateFee')
+  const amount = calculateFee(totalBalance)
   console.assert(amount.payout > 0, 'Payout is empty, aborting. No money to pay out for this content right now')
 
+  console.log('buildTransaction: addOutput payoutAddress', amount.payout)
   if (amount.payout > 0) {
     tx.addOutput(payoutAddress, amount.payout)
   }
+  console.log('buildTransaction: addOutput serviceAddress', amount.service)
   if (amount.service > 0) {
     tx.addOutput(serviceAddress, amount.service)
   }
 
+  console.log('buildTransaction: sign')
   inputsList.forEach((input, index) => {
-    var keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
+    const keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
     tx.sign(index, keyPair)
   })
-  return tx.build().toHex()
+  console.log('buildTransaction: toHex')
+  // return tx.build().toHex()
+  const txRaw = tx.build()
+  console.log(Object.keys(txRaw), typeof txRaw)
+  return txRaw.toHex()
 }
 
 function isValidInput (inputObj) {
@@ -128,7 +138,6 @@ function addBlockchainInformationToInputs (invoiceList) {
         )
       } else {
         reject(transactionInfo)
-        console.error('err!')
       }
     })
   }).then((rawListOfTxInfo) => {
@@ -143,7 +152,7 @@ function addBlockchainInformationToInputs (invoiceList) {
       invoiceList.map((invoice, index) => {
         if ('paymentTimestamp' in invoice) {
           if (listOfTxInfo[index] && 'final_balance' in listOfTxInfo[index]) {
-            var txInput = invoice
+            const txInput = invoice
             txInput.finalBalance = listOfTxInfo[index].final_balance
 
             // TODO make sure txs[0] is the newest, not oldest
@@ -163,30 +172,32 @@ function addBlockchainInformationToInputs (invoiceList) {
 function payoutContent (contentId) {
   // side effecty. Pays out all outstanding balances we owe to contentId
   const blockchainApi = require('utils/blockchainApi')
-  return fetch.inputsList(contentId)
-              .then((x) => {
-                console.log(x)
-                return x
-              })
+  const Invoice = require('records/Invoice')
+  const Content = require('records/Content')
+
+  return Invoice.findAll(contentId)
+    .then((addresses) => Promise.all(addresses.map(Invoice.find)))
+    .then((addresses) => addresses.filter((address) => address.contentId === contentId))
+    // TODO: check for empty addresses list
     .then(addBlockchainInformationToInputs)
-    .then((x) => {
-      console.log(x)
-      return x
-    })
     .then((inputsList) => {
       console.assert(inputsList, 'inputList is false after addBlockchainInformationToInputs')
       return {
         inputsList: inputsList.filter((x) => !!x),
-        payoutAddress: fetch.contentPayoutAddress(contentId),
         serviceAddress: fetch.serviceAddress()
       }
     })
+    .then((transactionInfo) => (
+      Content.find(contentId)
+        .then((contentRecord) => set(transactionInfo, 'payoutAddress', contentRecord.payoutAddress))
+    ))
     .then(buildTransaction)
     .then(blockchainApi.broadcastTransaction)
     .then((result) => {
       console.log('Message from blockchain.info:', result)
       return result
     })
+    .catch((error) => console.error('payoutContent had an issue', error))
 }
 
 module.exports = {

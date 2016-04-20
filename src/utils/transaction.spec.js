@@ -49,19 +49,18 @@ test('transaction.buildTransaction', (t) => {
   }
 
   const actual = transaction.buildTransaction(mockData)
-  const expected = '01000000010704d1846440335f2f9c23fe3f660facea4bec49c01939a52a435fea11cc948a000000006a473044022073e4b18365536ab57d088b17cef62060de44c596634b1463c31b5a4a0bcb525002200e560aaa4f4c57e87a6704f28a202dde2f4f23744809a2e1c8f2549960e43fc401210346de948d9486886c4b91ded5cb282f541d6f86247dab923c231153ed39823299ffffffff02905f0100000000001976a9140eb3f3c5b78f32cd2d86b6b530c7cd9a6d05a78388ac28230000000000001976a914a560f78beb580526e198f18ab7c8025a3f6221d788ac00000000'
+  const expected = '01000000010704d1846440335f2f9c23fe3f660facea4bec49c01939a52a435fea11cc948a000000006a47304402205c28b871d1dc84efc7d77a2f086d4edfd13db36f5e27e9a8c16a0abffb580c3c02200ab5d3620b9759559e68a92058bbf42ac2619fa30ba092683cca1e45d0420dfc01210346de948d9486886c4b91ded5cb282f541d6f86247dab923c231153ed39823299ffffffff02b1610100000000001976a9140eb3f3c5b78f32cd2d86b6b530c7cd9a6d05a78388acfb220000000000001976a914a560f78beb580526e198f18ab7c8025a3f6221d788ac00000000'
   t.equal(actual, expected, 'transaction hex matches')
   t.end()
 })
 
 test('transaction.calculateFee', (t) => {
-  const mockTotal = 100
-
+  const mockTotal = 1000
   const actual = transaction.calculateFee(mockTotal)
   const expected = {
-    payout: 90,
-    service: 9,
-    miner: 1
+    payout: 455,
+    service: 45,
+    miner: 500
   }
 
   Object.keys(actual).forEach((key) => {
