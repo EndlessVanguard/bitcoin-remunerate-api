@@ -1,6 +1,5 @@
 const validates = require('utils/validates.js')
 const isValid = require('utils/isValid')
-
 const redisKey = 'content'
 
 const Content = {
@@ -13,9 +12,20 @@ const Content = {
     payoutAddress: validates.errorsInBitcoinAddress
   }),
 
-  // database
   find: (contentId) => {
     return require('../../config/content-database.js')[contentId]
+  },
+  findPromise: (contentId) => {
+    const redisDb = require('config/redis')
+    return new Promise((resolve, reject) => {
+      redisDb.hget(redisKey, contentId, (error, contentData) => {
+        if (error || !contentData) {
+          var hardCodedContent = require('../../config/content-database')[contentId]
+          hardCodedContent ? resolve(hardCodedContent) : reject(error)
+        }
+        resolve(contentData)
+      })
+    })
   },
   save: (data) => {
     const redisDb = require('config/redis')
