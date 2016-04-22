@@ -26,7 +26,15 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
 
   if (isNil(address)) {
     const newAddress = Invoice.newKeypair(contentId)
-    return res.status(402).json(sendPrompt(newAddress))
+    const content = Content.find(contentId)
+    const label = content.label
+    if (content.currency === 'satoshi') {
+      const satoshis = content.price
+      return res.status(402).json({ newAddress, label, satoshis })
+    } else {
+      console.log(content.currency, content)
+      throw Error('Bad currency, and I have yet to learn how to convert')
+    }
   }
   if (!validates.isBitcoinAddress(address)) {
     return res.status(400).json({errors: validates.errorsInBitcoinAddress(address)})
@@ -36,7 +44,15 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
     .then((addressFound) => {
       if (!addressFound) {
         const newAddress = Invoice.newKeypair(contentId)
-        return res.status(402).json(sendPrompt(newAddress))
+
+        const content = Content.find(contentId)
+        const label = content.label
+        if (content.currency === 'satoshi') {
+          const satoshis = content.price
+          return res.status(402).json({ newAddress, label, satoshis })
+        } else {
+          return res.status(500)
+        }
       }
 
       return blockchainApi.lookup(address)
@@ -46,7 +62,14 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
             Invoice.markAsPaid(address)
             res.status(200).send(Content.fetchContent(contentId))
           } else {
-            res.status(402).json(sendPrompt(address))
+            const content = Content.find(contentId)
+            const label = content.label
+            if (content.currency === 'satoshi') {
+              const satoshis = content.price
+              return res.status(402).json({ address, label, satoshis })
+            } else {
+              throw Error('Bad currency, and I have yet to learn how to convert')
+            }
           }
         })
         .catch((error) => {
@@ -119,11 +142,6 @@ const server = app.listen(port, function () {
 })
 
 // helper for response formats
-const sendPrompt = (address) => ({
-  display: 'payment.prompt',
-  address: address
-})
-
 const sendMessage = (message) => ({
   message: message
 })

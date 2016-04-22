@@ -15,7 +15,7 @@ const Content = {
 
   // database
   find: (contentId) => {
-    return require('config/content-database.js')[contentId]
+    return require('../../config/content-database.js')[contentId]
   },
   save: (data) => {
     const redisDb = require('config/redis')
