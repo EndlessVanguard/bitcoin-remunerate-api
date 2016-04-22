@@ -31,6 +31,13 @@ const errorsInCurrency = (currency) => {
 const isInteger = require('lodash/isInteger')
 const errorsInInteger = (int) => isInteger(int) ? [] : ['must be a Integer']
 
+const errorsInLabel = (label) => {
+  var err = []
+  if (!isString(label)) { err.push('No label given') }
+  if (isString(label) && label.length < 1) { err.push('No label given') }
+  return err
+}
+
 module.exports = {
   errorsInBitcoinAddress: errorsInBitcoinAddress,
   isBitcoinAddress: (address) => (errorsInBitcoinAddress(address).length === 0),
@@ -53,5 +60,7 @@ module.exports = {
     if (!isString(contentId)) { err.push('contentId must be string') }
     if (/ /.test(contentId)) { err.push('contentId can not contain spaces') }
     return err
-  }
+  },
+  errorsInLabel: errorsInLabel,
+  isLabel: (label) => (errorsInLabel(label).length === 0)
 }

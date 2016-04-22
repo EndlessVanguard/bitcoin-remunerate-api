@@ -9,6 +9,7 @@ const Content = {
     content: validates.errorsInString,
     price: validates.errorsInInteger,
     currency: validates.errorsInCurrency,
+    label: validates.errorsInLabel,
     payoutAddress: validates.errorsInBitcoinAddress
   }),
 
