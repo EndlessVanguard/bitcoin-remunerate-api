@@ -20,6 +20,7 @@ app.get('/', (req, res) => (
 app.get(`/${apiVersion}/content`, (req, res) => (
   res.status(400).json(sendMessage('missing contentId. Remember to put something after the /!'))
 ))
+
 app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
   const address = req.query.address
   const contentId = req.params.contentId
@@ -27,14 +28,7 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
   if (isNil(address)) {
     const newAddress = Invoice.newKeypair(contentId)
     const content = Content.find(contentId)
-    const label = content.label
-    if (content.currency === 'satoshi') {
-      const satoshis = content.price
-      return res.status(402).json({ newAddress, label, satoshis })
-    } else {
-      console.log(content.currency, content)
-      throw Error('Bad currency, and I have yet to learn how to convert')
-    }
+    return res.status(402).json(paymentPrompt(newAddress, content))
   }
   if (!validates.isBitcoinAddress(address)) {
     return res.status(400).json({errors: validates.errorsInBitcoinAddress(address)})
@@ -44,15 +38,8 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
     .then((addressFound) => {
       if (!addressFound) {
         const newAddress = Invoice.newKeypair(contentId)
-
         const content = Content.find(contentId)
-        const label = content.label
-        if (content.currency === 'satoshi') {
-          const satoshis = content.price
-          return res.status(402).json({ newAddress, label, satoshis })
-        } else {
-          return res.status(500)
-        }
+        return res.status(402).json(paymentPrompt(newAddress, content))
       }
 
       return blockchainApi.lookup(address)
@@ -63,13 +50,7 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
             res.status(200).send(Content.fetchContent(contentId))
           } else {
             const content = Content.find(contentId)
-            const label = content.label
-            if (content.currency === 'satoshi') {
-              const satoshis = content.price
-              return res.status(402).json({ address, label, satoshis })
-            } else {
-              throw Error('Bad currency, and I have yet to learn how to convert')
-            }
+            return res.status(402).json(paymentPrompt(address, content))
           }
         })
         .catch((error) => {
@@ -145,6 +126,16 @@ const server = app.listen(port, function () {
 const sendMessage = (message) => ({
   message: message
 })
+
+const paymentPrompt = (address, contentRecord) => {
+  const label = contentRecord.label
+  if (contentRecord.currency === 'satoshi') {
+    const satoshis = contentRecord.price
+    return { address, label, satoshis }
+  } else {
+    throw Error('Bad currency, and I have yet to learn how to convert')
+  }
+}
 
 module.exports = {
   app: app,
