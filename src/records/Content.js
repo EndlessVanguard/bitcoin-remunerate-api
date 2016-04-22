@@ -41,8 +41,6 @@ const Content = {
     })
   },
 
-  fetchContent: (contentId) => Content.find(contentId).content,
-
   errorsInContent: (contentData) => isValid.errorsInRecord(contentData, Content.properties),
   isValidContent: (contentData) => isValid.isValidRecord(contentData, Content.properties)
 }
