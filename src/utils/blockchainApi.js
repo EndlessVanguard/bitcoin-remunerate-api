@@ -4,20 +4,12 @@ function blockchainAddressLookupUrl (address) {
   return 'https://blockchain.info/rawaddr/' + address
 }
 
-function lookup (address) {
-  return new Promise((resolve, reject) => {
-    request.get({
-      url: blockchainAddressLookupUrl(address)
-    }, (error, response, body) => {
-      if (!error) {
-        resolve(response)
-      } else {
-        console.log('error!', error, response)
-        reject(error)
-      }
-    })
-  })
-}
+const lookup = (address) => (
+  new Promise((resolve, reject) => (request.get(
+    { url: blockchainAddressLookupUrl(address) },
+    (error, response, body) => error ? reject(error) : resolve(JSON.parse(body))
+  )))
+)
 
 function broadcastTransaction (transactionHex) {
   console.log('broadcasting\n')
