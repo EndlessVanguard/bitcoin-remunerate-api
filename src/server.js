@@ -48,7 +48,7 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
           if (blockchainApi.isPaid(body)) {
             Invoice.markAsPaid(address)
 
-            Content.findPromise(contentId).then((content) => {
+            Content.find(contentId).then((content) => {
               return res.status(200).send(content.content)
             }).catch((error) => {
               console.log(error)

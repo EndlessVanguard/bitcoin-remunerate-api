@@ -13,9 +13,6 @@ const Content = {
   }),
 
   find: (contentId) => {
-    return require('../../config/content-database.js')[contentId]
-  },
-  findPromise: (contentId) => {
     const redisDb = require('config/redis')
     return new Promise((resolve, reject) => {
       redisDb.hget(redisKey, contentId, (error, contentData) => {
