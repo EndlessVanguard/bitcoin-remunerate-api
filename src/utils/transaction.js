@@ -23,18 +23,20 @@ const fetch = {
   }
 }
 
+// in Satoshi
+const minimumPayoutBalance = 100000
+
 function calculateFee (total) {
-  const miners = 1000
+  const minersFee = 500
   return {
-    payout: ((total - miners) * 0.9),
-    service: ((total - miners) * 0.09),
-    miner: miners
+    payout: Math.floor((total - minersFee) * 0.91),
+    service: Math.floor((total - minersFee) * 0.09)
   }
 }
 
 const bitcoin = require('bitcoinjs-lib')
-function verifyKeypair (WIF, address) {
-  var keyPair = bitcoin.ECPair.fromWIF(WIF)
+function isKeypair (WIF, address) {
+  const keyPair = bitcoin.ECPair.fromWIF(WIF)
   return keyPair.getAddress() === address
 }
 
@@ -42,7 +44,7 @@ function buildTransaction (transactionInfo) {
   const inputsList = transactionInfo.inputsList
   const payoutAddress = transactionInfo.payoutAddress
   const serviceAddress = transactionInfo.serviceAddress
-  var tx = new bitcoin.TransactionBuilder()
+  const tx = new bitcoin.TransactionBuilder()
   console.assert(isArray(inputsList), 'TypeError: inputsList not an Array')
   console.assert(inputsList.length > 0, 'inputsList is empty')
   console.assert(validates.isBitcoinAddress(payoutAddress),
@@ -51,14 +53,14 @@ function buildTransaction (transactionInfo) {
                  'serviceAddress must be valid Bitcoin Address', serviceAddress)
 
   inputsList.forEach((input, index) => {
-    console.assert(verifyKeypair(input.privateKey, input.address),
+    console.assert(isKeypair(input.privateKey, input.address),
                    'keypair mismatch')
     tx.addInput(input.txs[0].hash, (index + 1))
   })
 
-  const amount = calculateFee(
-    inputsList.reduce((sum, x) => sum + x['final_balance'], 0)
-  )
+  const totalPayout = inputsList.reduce((sum, x) => sum + x['final_balance'], 0)
+  console.assert(totalPayout > minimumPayoutBalance, `totalPayout ${totalPayout} is less than the minimumPayoutBalance ${minimumPayoutBalance}`)
+  const amount = calculateFee(totalPayout)
   console.assert(amount.payout > 0, 'Payout is empty, aborting. No money to pay out for this content right now')
 
   /* if (amount.payout > 0) {
@@ -70,7 +72,7 @@ function buildTransaction (transactionInfo) {
   }
 
   inputsList.forEach((input, index) => {
-    var keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
+    const keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
     console.log('sign', (index + 1))
     tx.sign(index, keyPair)
   })
@@ -120,9 +122,7 @@ function addBlockchainInformationToInvoices (invoiceList) {
 function payoutContent (contentId) {
   const blockchainApi = require('utils/blockchainApi')
   return Invoice.findAll(contentId)
-    .then((addresses) => Promise.all(
-      addresses.map((address) => Invoice.find(address))
-    ))
+    .then((invoices) => Promise.all(invoices.map(Invoice.find)))
     .then(addBlockchainInformationToInvoices)
     .then((invoiceList) => (filter(invoiceList, (invoice, index) => (
       invoice.n_tx > 0 && invoice.final_balance > 0 // I'm feeling Lispy
