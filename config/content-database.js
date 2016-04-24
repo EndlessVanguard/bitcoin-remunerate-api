@@ -9,6 +9,6 @@ module.exports = {
     price: 5000,
     currency: 'satoshi',
     label: 'Momonas demo video',
-    content: '<h3>Nice done!</h3><p>to get this on your website, get in touch with us. Here is the content you paid for: </p><iframe width="560" height="315" src="https://www.youtube.com/embed/JWZMzcmqMwc&autoplay=1" frameborder="0" allowfullscreen></iframe>'
+    content: '<h3>Nice done!</h3><p>to get this on your website, get in touch with us. <br>Here is the content you paid for: </p><iframe width="345" height="194" src="https://www.youtube-nocookie.com/embed/3ggIHfwkIWM?rel=0&amp;showinfo=0" frameborder="0" allowfullscreen></iframe>'
   }
 }
