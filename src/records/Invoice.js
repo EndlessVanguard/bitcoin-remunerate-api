@@ -6,6 +6,9 @@ const bitcoin = require('bitcoinjs-lib')
 const assoc = require('lodash/fp/assoc')
 const isNil = require('lodash/isNil')
 
+const filter = require('lodash/fp/filter')
+const mapValues = require('lodash/fp/mapValues')
+
 const Invoice = {
   properties: Object.freeze({
     createdAt: validates.errorsInJavascriptTimestamp,
@@ -24,14 +27,15 @@ const Invoice = {
       })
     })
   },
-  findAll: () => {
+  findAll: (contentId) => {
     const redisDb = require('config/redis')
     return new Promise((resolve, reject) => {
-      redisDb.hkeys(redisKey, (error, addressList) => {
+      redisDb.hgetall(redisKey, (error, invoiceMap) => {
         if (error) reject(error)
-        resolve(addressList)
+        resolve(mapValues(JSON.parse, invoiceMap))
       })
     })
+    .then(filter((invoice) => invoice.contentId === contentId))
   },
   // MUTATING
   save: (invoice) => {
