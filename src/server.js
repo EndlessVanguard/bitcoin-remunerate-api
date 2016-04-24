@@ -27,8 +27,9 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
 
   if (isNil(address)) {
     const newAddress = Invoice.newKeypair(contentId)
-    const content = Content.find(contentId)
-    return res.status(402).json(paymentPrompt(newAddress, content))
+    return Content.find(contentId).then((content) => (
+      res.status(402).json(paymentPrompt(newAddress, content))
+    ))
   }
   if (!validates.isBitcoinAddress(address)) {
     return res.status(400).json({errors: validates.errorsInBitcoinAddress(address)})
@@ -38,8 +39,9 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
     .then((addressFound) => {
       if (!addressFound) {
         const newAddress = Invoice.newKeypair(contentId)
-        const content = Content.find(contentId)
-        return res.status(402).json(paymentPrompt(newAddress, content))
+        Content.find(contentId).then((content) => (
+          res.status(402).json(paymentPrompt(newAddress, content))
+        ))
       }
 
       return blockchainApi.lookup(address)
@@ -49,14 +51,15 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
             Invoice.markAsPaid(address)
 
             Content.find(contentId).then((content) => {
-              return res.status(200).send(content.content)
+              res.status(200).send(content.content)
             }).catch((error) => {
               console.log(error)
               return res.status(500).send()
             })
           } else {
-            const content = Content.find(contentId)
-            return res.status(402).json(paymentPrompt(address, content))
+            Content.find(contentId).then((content) => (
+              res.status(402).json(paymentPrompt(address, content))
+            ))
           }
         })
         .catch((error) => {
@@ -135,8 +138,10 @@ const sendMessage = (message) => ({
 
 const paymentPrompt = (address, contentRecord) => {
   const label = contentRecord.label
+
   if (contentRecord.currency === 'satoshi') {
     const satoshis = contentRecord.price
+
     return { address, label, satoshis }
   } else {
     throw Error('Bad currency, and I have yet to learn how to convert')
