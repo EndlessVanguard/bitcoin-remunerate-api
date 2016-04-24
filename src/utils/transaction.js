@@ -1,22 +1,16 @@
+const async = require('async')
 const isArray = require('lodash/isArray')
-const isObject = require('lodash/isObject')
-const Invoice = require('records/Invoice')
-const Content = require('records/Content')
 const filter = require('lodash/filter')
-const validates = require('../utils/validates.js')
+const merge = require('lodash/merge')
+const compose = require('lodash/fp/compose')
+const get = require('lodash/fp/get')
+
+const Content = require('records/Content')
+const Invoice = require('records/Invoice')
+const validates = require('utils/validates.js')
+const blockchainApi = require('utils/blockchainApi')
 
 const fetch = {
-  getLastTransactionId: (inputData, callback) => {
-    var bitcoinPrivateKeyWIF = inputData.privateKey
-    const blockchainApi = require('utils/blockchainApi')
-    const bitcoin = require('bitcoinjs-lib')
-    const address = bitcoin.ECPair.fromWIF(bitcoinPrivateKeyWIF).getAddress()
-    bitcoinPrivateKeyWIF = undefined
-
-    return blockchainApi.lookup(address)
-      .then((addressInfo) => callback(null, addressInfo))
-      .catch((err) => callback(err, null))
-  },
   serviceAddress: () => {
     // TODO: we should calculate a new keypair, track it, and respond ꙲
     return '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
@@ -71,6 +65,7 @@ function buildTransaction (transactionInfo) {
     tx.addOutput(serviceAddress, amount.payout + amount.service) // fixme
   }
 
+  // THIS index is the lie that breaks transactions;
   inputsList.forEach((input, index) => {
     const keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
     console.log('sign', (index + 1))
@@ -79,48 +74,18 @@ function buildTransaction (transactionInfo) {
   return tx.build().toHex()
 }
 
-function isValidInput (inputObj) {
-  if (!isObject(inputObj)) { return false }
-  // type test of transaction input
-  if (!('finalBalance' in inputObj)) { return false }
-  if (!('privateKey' in inputObj)) { return false }
-  if (!('lastTransaction' in inputObj)) { return false }
-  return true
-}
-
-function addBlockchainInformationToInvoices (invoiceList) {
-  // add finalBalance, lastTransaction to every input
-  const async = require('async')
-  // Fetch and merge all TX data we need as input in our transactions
-  return new Promise((resolve, reject) => {
-    async.mapLimit(invoiceList, 5, fetch.getLastTransactionId, (err, transactionInfo) => {
-      if (!err) {
-        resolve(
-          transactionInfo.map((txInfo) => {
-            return JSON.parse(txInfo.body)
-          })
-        )
-      } else {
-        reject(transactionInfo)
-        console.error('err!')
-      }
-    })
-  })
-  .then((listOfTxInfo) => {
-    const merge = require('lodash/merge')
-    return merge(invoiceList, listOfTxInfo)
-  })
-}
-
-/* function pp (msg) {
-   return function (x) {
-   console.log('pp: ', msg, x)
-   return x
-   }
-   } */
+// add finalBalance, lastTransaction to every input
+// Fetch and merge all TX data we need as input in our transactions
+const addBlockchainInformationToInvoices = (invoiceList) => (
+  new Promise((resolve, reject) => (async.mapLimit(
+    invoiceList,
+    5,
+    async.asyncify(compose(blockchainApi.lookup, get('address'))),
+    (error, transactionInfo) => error ? reject(transactionInfo) : resolve(transactionInfo)
+  ))).then((transactionInfo) => merge(invoiceList, transactionInfo))
+)
 
 function payoutContent (contentId) {
-  const blockchainApi = require('utils/blockchainApi')
   return Invoice.findAll(contentId)
     .then((invoices) => Promise.all(invoices.map(Invoice.find)))
     .then(addBlockchainInformationToInvoices)
@@ -130,18 +95,14 @@ function payoutContent (contentId) {
     .then((inputsList) => {
       // Wish there was a better way to abort promise chains than throwing
       // It looks bad in the console for something that isn't an error
-      console.assert(inputsList,
+      console.assert(inputsList.length > 0,
                      'No invoices with paymentTimestamp. No one to payout to.')
 
-      return Content.findPromise(contentId).then((rawContent) => {
-        const content = JSON.parse(rawContent)
-
-        return {
-          inputsList: inputsList.filter((x) => !!x), // filter undefined etc
-          payoutAddress: content.payoutAddress,
-          serviceAddress: fetch.serviceAddress()
-        }
-      })
+      return Content.find(contentId).then((content) => ({
+        inputsList: inputsList.filter((x) => !!x), // filter undefined etc
+        payoutAddress: content.payoutAddress,
+        serviceAddress: fetch.serviceAddress()
+      }))
     })
     .then(buildTransaction)
     .then(blockchainApi.broadcastTransaction)
@@ -152,8 +113,8 @@ function payoutContent (contentId) {
 }
 
 module.exports = {
+  addBlockchainInformationToInvoices: addBlockchainInformationToInvoices,
   buildTransaction: buildTransaction,
   calculateFee: calculateFee,
-  isValidInput: isValidInput,
   payoutContent: payoutContent
 }
