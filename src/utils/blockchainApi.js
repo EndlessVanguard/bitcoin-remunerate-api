@@ -7,7 +7,13 @@ const blockchainAddressLookupUrl = (address) => (
 
 // Sometimes blockchain.info sends errors with status 200
 // This is how we deal with that
-const lookupErrors = ['Checksum does not validate']
+const lookupErrors = [
+  'Checksum does not validate',
+  'Input too short',
+  'Maximum concurrent requests from this IP reached. Please try again shortly.',
+  'All Outputs Are Very Small you must include a min (10000) satoshi fee'
+]
+
 function lookup (address) {
   return new Promise((resolve, reject) => {
     request.get({
@@ -16,8 +22,7 @@ function lookup (address) {
       if (error || includes(lookupErrors, trim(body))) {
         return reject(error || body)
       } else {
-        // FIXME should give back response.body
-        return resolve(response)
+        return resolve(JSON.parse(body)) // REBASE CHANGE FIX
       }
     })
   })
