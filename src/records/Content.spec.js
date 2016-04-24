@@ -1,7 +1,8 @@
 const test = require('tape')
 const Content = require('./Content')
 const isEqual = require('lodash/isEqual')
-const R = require('ramda')
+const dissoc = require('lodash/fp/dissoc')
+const assoc = require('lodash/fp/assoc')
 
 const validContent = {
   contentId: 'my-cool-content',
@@ -17,13 +18,13 @@ test('isValidContent', (t) => {
     Content.isValidContent(validContent),
     'Valid Content record is valid')
   t.assert(
-    !Content.isValidContent(R.dissoc('contentId', validContent)),
+    !Content.isValidContent(dissoc('contentId', validContent)),
     'Content is missing contentId is invalid')
   t.assert(
-    !Content.isValidContent(R.dissoc('content', validContent)),
+    !Content.isValidContent(dissoc('content', validContent)),
     'Content is missing content is invalid')
   t.assert(
-    !Content.isValidContent(R.assoc('price', '10000', validContent)),
+    !Content.isValidContent(assoc('price', '10000', validContent)),
     'Content price can not be string')
   t.end()
 })
@@ -35,14 +36,13 @@ test('errorsInContent', (t) => {
   ), 'Valid content contains no errors')
 
   t.equal(
-    Content.errorsInContent(R.dissoc('currency', validContent)).length,
+    Content.errorsInContent(dissoc('currency', validContent)).length,
     1,
     'Content missing currency gives an error')
 
   t.equal(
-    // Currying can make this prettier somehow
-    Content.errorsInContent(R.dissoc('price',
-                                     R.dissoc('currency', validContent))).length,
+    Content.errorsInContent(dissoc('price',
+                                   dissoc('currency', validContent))).length,
     2,
     'Content missing price and currency has 2 errors')
 

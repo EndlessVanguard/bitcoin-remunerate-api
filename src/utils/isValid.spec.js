@@ -1,5 +1,5 @@
 const test = require('tape')
-const R = require('ramda')
+const dissoc = require('lodash/fp/dissoc')
 const isValid = require('./isValid')
 
 const isEqual = require('lodash/isEqual')
@@ -23,7 +23,7 @@ const validRecord = {
 
 test('isValidRecord', (t) => {
   t.assert(isValid.isValidRecord(validRecord, mockProperties))
-  t.assert(!isValid.isValidRecord(R.dissoc('payoutAddress', validRecord), mockProperties))
+  t.assert(!isValid.isValidRecord(dissoc('payoutAddress', validRecord), mockProperties))
   t.end()
 })
 
@@ -36,19 +36,19 @@ test('errorsInRecord', (t) => {
   )
 
   t.equal(
-    isValid.errorsInRecord(R.dissoc('currency', validRecord), mockProperties).length,
+    isValid.errorsInRecord(dissoc('currency', validRecord), mockProperties).length,
     1,
     'Removing required field in Record gives errors'
   )
 
   console.log(isValid.errorsInRecord(
-    R.dissoc('currency', R.dissoc('payoutAddress', validRecord)),
+    dissoc('currency', dissoc('payoutAddress', validRecord)),
     mockProperties))
 
   t.assert(
-    R.equals(
+    isEqual(
       isValid.errorsInRecord(
-        R.dissoc('currency', R.dissoc('payoutAddress', validRecord)),
+        dissoc('currency', dissoc('payoutAddress', validRecord)),
         mockProperties
       ),
       ['Currency must be "satoshi"',
