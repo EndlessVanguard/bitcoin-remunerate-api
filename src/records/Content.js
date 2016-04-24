@@ -20,7 +20,7 @@ const Content = {
           var hardCodedContent = require('../../config/content-database')[contentId]
           hardCodedContent ? resolve(hardCodedContent) : reject(error)
         }
-        resolve(contentData)
+        resolve(JSON.parse(contentData))
       })
     })
   },
