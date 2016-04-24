@@ -3,6 +3,9 @@ const validates = require('utils/validates')
 const redisKey = 'invoice'
 const isValid = require('utils/isValid')
 
+const filter = require('lodash/fp/filter')
+const mapValues = require('lodash/fp/mapValues')
+
 const Invoice = {
   properties: Object.freeze({
     address: validates.errorsInBitcoinAddress,
@@ -21,14 +24,15 @@ const Invoice = {
       })
     })
   },
-  findAll: () => {
+  findAll: (contentId) => {
     const redisDb = require('config/redis')
     return new Promise((resolve, reject) => {
-      redisDb.hkeys(redisKey, (error, addressList) => {
+      redisDb.hgetall(redisKey, (error, invoiceMap) => {
         if (error) reject(error)
-        resolve(addressList)
+        resolve(mapValues(JSON.parse, invoiceMap))
       })
     })
+    .then(filter((invoice) => invoice.contentId === contentId))
   },
   save: (data) => {
     const redisDb = require('config/redis')
