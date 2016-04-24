@@ -35,30 +35,3 @@ test('transaction.calculateFee', (t) => {
   })
   t.end()
 })
-
-test('transaction.isValidInput', (t) => {
-  const validInput = {
-    privateKey: 'L1dHE6RmNw345p2wy5m6dzyULAzqM96HdeHrfAKgU5sLYrNYpup9',
-    finalBalance: 100000,
-    lastTransaction: '8a94cc11ea5f432aa53919c049ec4beaac0f663ffe239c2f5f33406484d10407'
-  }
-  const invalidInputs = [
-    {
-      finalBalance: 100000,
-      lastTransaction: '8a94cc11ea5f432aa53919c049ec4beaac0f663ffe239c2f5f33406484d10407'
-    },
-    {
-      privateKey: 'L1dHE6RmNw345p2wy5m6dzyULAzqM96HdeHrfAKgU5sLYrNYpup9',
-      finalBalance: 100000
-    },
-    {
-      privateKey: 'L1dHE6RmNw345p2wy5m6dzyULAzqM96HdeHrfAKgU5sLYrNYpup9',
-      lastTransaction: '8a94cc11ea5f432aa53919c049ec4beaac0f663ffe239c2f5f33406484d10407'
-    }
-  ]
-  t.equal(true, transaction.isValidInput(validInput), 'good input is valid')
-  t.equal(false, transaction.isValidInput(invalidInputs[0]), 'input needs private key')
-  t.equal(false, transaction.isValidInput(invalidInputs[1]), 'input needs lastTransaction')
-  t.equal(false, transaction.isValidInput(invalidInputs[2]), 'input needs finalBalance')
-  t.end()
-})
