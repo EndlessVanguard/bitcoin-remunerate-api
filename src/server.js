@@ -20,13 +20,15 @@ app.get('/', (req, res) => (
 app.get(`/${apiVersion}/content`, (req, res) => (
   res.status(400).json(sendMessage('missing contentId. Remember to put something after the /!'))
 ))
+
 app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
   const address = req.query.address
   const contentId = req.params.contentId
 
   if (isNil(address)) {
     const newAddress = Invoice.newKeypair(contentId)
-    return res.status(402).json(sendPrompt(newAddress))
+    const content = Content.find(contentId)
+    return res.status(402).json(paymentPrompt(newAddress, content))
   }
   if (!validates.isBitcoinAddress(address)) {
     return res.status(400).json({errors: validates.errorsInBitcoinAddress(address)})
@@ -36,7 +38,8 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
     .then((addressFound) => {
       if (!addressFound) {
         const newAddress = Invoice.newKeypair(contentId)
-        return res.status(402).json(sendPrompt(newAddress))
+        const content = Content.find(contentId)
+        return res.status(402).json(paymentPrompt(newAddress, content))
       }
 
       return blockchainApi.lookup(address)
@@ -46,7 +49,8 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
             Invoice.markAsPaid(address)
             res.status(200).send(Content.fetchContent(contentId))
           } else {
-            res.status(402).json(sendPrompt(address))
+            const content = Content.find(contentId)
+            return res.status(402).json(paymentPrompt(address, content))
           }
         })
         .catch((error) => {
@@ -119,14 +123,19 @@ const server = app.listen(port, function () {
 })
 
 // helper for response formats
-const sendPrompt = (address) => ({
-  display: 'payment.prompt',
-  address: address
-})
-
 const sendMessage = (message) => ({
   message: message
 })
+
+const paymentPrompt = (address, contentRecord) => {
+  const label = contentRecord.label
+  if (contentRecord.currency === 'satoshi') {
+    const satoshis = contentRecord.price
+    return { address, label, satoshis }
+  } else {
+    throw Error('Bad currency, and I have yet to learn how to convert')
+  }
+}
 
 module.exports = {
   app: app,

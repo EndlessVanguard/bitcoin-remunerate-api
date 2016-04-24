@@ -8,6 +8,7 @@ const validContent = {
   content: 'This is a cool article about something interesting',
   price: 10000,
   currency: 'satoshi',
+  label: 'This string shows up in peoples bitcoin wallets',
   payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
 }
 
@@ -39,7 +40,7 @@ test('errorsInContent', (t) => {
     'Content missing currency gives an error')
 
   t.equal(
-    // Wish Rambda dissoc would accept more than one key to dissoc...
+    // Currying can make this prettier somehow
     Content.errorsInContent(R.dissoc('price',
                                      R.dissoc('currency', validContent))).length,
     2,

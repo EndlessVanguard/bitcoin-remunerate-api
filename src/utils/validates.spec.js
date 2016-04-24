@@ -122,3 +122,20 @@ test('string validation', (t) => {
   t.assert(validates.isString('lodash is amaze'))
   t.end()
 })
+
+test('validates.errorsInLabel', (t) => {
+  const validLabel = 'This is a label'
+  t.assert(
+    isEqual(validates.errorsInLabel(''), ['No label given']),
+    'Empty string is not valid label'
+  )
+  t.assert(
+    isEqual(validates.errorsInLabel(), ['No label given']),
+    'no label is not a valid label'
+  )
+  t.assert(
+    validates.errorsInLabel(validLabel).length === 0,
+    'valid label is valid'
+  )
+  t.end()
+})

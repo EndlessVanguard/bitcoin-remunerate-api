@@ -9,12 +9,13 @@ const Content = {
     content: validates.errorsInString,
     price: validates.errorsInInteger,
     currency: validates.errorsInCurrency,
+    label: validates.errorsInLabel,
     payoutAddress: validates.errorsInBitcoinAddress
   }),
 
   // database
   find: (contentId) => {
-    return require('config/content-database.js')[contentId]
+    return require('../../config/content-database.js')[contentId]
   },
   save: (data) => {
     const redisDb = require('config/redis')
