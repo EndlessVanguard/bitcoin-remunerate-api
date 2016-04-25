@@ -1,14 +1,26 @@
 const request = require('request')
+const isEqual = require('lodash/fp/isEqual')
 
 function blockchainAddressLookupUrl (address) {
   return 'https://blockchain.info/rawaddr/' + address
 }
 
 const lookup = (address) => (
-  new Promise((resolve, reject) => (request.get(
-    { url: blockchainAddressLookupUrl(address) },
-    (error, response, body) => error ? reject(error) : resolve(JSON.parse(body))
-  )))
+  new Promise((resolve, reject) => (
+    request.get(
+      { url: blockchainAddressLookupUrl(address) },
+      (error, response, body) => {
+        if (error) {
+          return reject(error)
+        } else {
+          if (isEqual(body, 'Maximum concurrent requests from this IP reached. Please try again shortly.')) {
+            reject(body)
+          }
+          return resolve(JSON.parse(body))
+        }
+      }
+    )
+  ))
 )
 
 function broadcastTransaction (transactionHex) {

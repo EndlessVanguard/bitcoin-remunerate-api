@@ -24,18 +24,6 @@ const Content = {
       })
     })
   },
-  findPromise: (contentId) => {
-    const redisDb = require('config/redis')
-    return new Promise((resolve, reject) => {
-      redisDb.hget(redisKey, contentId, (error, contentData) => {
-        if (error || !contentData) {
-          var hardCodedContent = require('../../config/content-database')[contentId]
-          hardCodedContent ? resolve(hardCodedContent) : reject(error)
-        }
-        resolve(contentData)
-      })
-    })
-  },
   save: (data) => {
     const redisDb = require('config/redis')
     return new Promise((resolve, reject) => {

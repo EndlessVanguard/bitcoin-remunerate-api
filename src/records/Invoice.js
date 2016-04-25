@@ -55,7 +55,7 @@ const Invoice = {
       .then((invoiceRecord) => {
         if (!invoiceRecord.paymentTimestamp) {
           invoiceRecord.paymentTimestamp = Date.now()
-          Invoice.save(invoiceRecord)
+          return Invoice.save(invoiceRecord)
         }
       })
   },
