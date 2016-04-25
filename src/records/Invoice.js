@@ -35,7 +35,7 @@ const Invoice = {
         resolve(mapValues(JSON.parse, invoiceMap))
       })
     })
-    .then(filter((invoice) => invoice.contentId === contentId))
+      .then(filter((invoice) => invoice.contentId === contentId))
   },
   // MUTATING
   save: (invoice) => {
@@ -50,7 +50,7 @@ const Invoice = {
 
   isAddressAndContentPaired: (address, contentId) => (
     Invoice.find(address)
-           .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))),
+      .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))),
 
   markInvoiceAsPaid: (invoice) => assoc(invoice, 'paymentTimestamp', Date.now()),
 
