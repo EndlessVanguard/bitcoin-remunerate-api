@@ -12,9 +12,31 @@ app.use(require('cors')())
 app.use(require('body-parser').urlencoded())
 app.use(require('body-parser').json())
 // index
-app.get('/', (req, res) => (
-  res.status(200).send(`Welcome to Momona! Do GET /${apiVersion}/content/:contentId`)
-))
+const helpMessageRoute = (req, res) => (
+  res.status(200).send(`Welcome to Momona!
+Here follows our available routes
+
+* GET /0/content/:contentId - get an invoice for :contentId. Try /0/content/momona-demo-video
+* GET /0/content/:contentId?address=<invoice bitcoin address> - Supply the address given in above invoice. If it's paid, you will receive the content, else you will get another copy of your invoice.
+* POST /0/content - Upload new content to Momona, and get the contentId back.
+Uploading new content has some required fields. They are:
+
+* contentId - a string
+* content - a string of content to be returned. Can be a URL that you handle in some way.
+* price - currently we only support setting prices in satoshi. Remember: 1btc = 1e8*satoshis
+* currency - currently we only support 'satoshi', but soon we will support pegging your price to a fiat currency
+* label - A label. This will show up in your customers bitcoin wallets after they have paid
+* payoutAddress - Your address. This is where your revenue from the content will be sent
+
+We hope you will enjoy using Momona, and find it profitable.
+Please do not hesitate to contact us for any questions.
+
+Help desk help@getmomona.com
+Martin martin@getmomona.com
+Matt matt@getmomona.com
+`))
+app.get('/', helpMessageRoute)
+app.get('/0/', helpMessageRoute)
 
 // api for content
 app.get(`/${apiVersion}/content`, (req, res) => (
