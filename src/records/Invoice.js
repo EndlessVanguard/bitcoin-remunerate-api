@@ -1,13 +1,13 @@
+const assoc = require('lodash/fp/assoc')
+const bitcoin = require('bitcoinjs-lib')
+const filter = require('lodash/fp/filter')
+const isNil = require('lodash/isNil')
+const mapValues = require('lodash/fp/mapValues')
+
+const isValid = require('utils/isValid')
 const validates = require('utils/validates')
 
 const redisKey = 'invoice'
-const isValid = require('utils/isValid')
-const bitcoin = require('bitcoinjs-lib')
-const assoc = require('lodash/fp/assoc')
-const isNil = require('lodash/isNil')
-
-const filter = require('lodash/fp/filter')
-const mapValues = require('lodash/fp/mapValues')
 
 const Invoice = {
   properties: Object.freeze({
@@ -39,13 +39,14 @@ const Invoice = {
   },
   // MUTATING
   save: (invoice) => {
-    // TODO this should return a promise, so we can check for errors
     const redisDb = require('config/redis')
-    if (Invoice.isValidInvoice(invoice)) {
-      redisDb.hset(redisKey, invoice.address, JSON.stringify(invoice))
-      return true
-    }
-    return false
+    return new Promise((resolve, reject) => {
+      if (Invoice.isValidInvoice(invoice)) {
+        redisDb.hset(redisKey, invoice.address, JSON.stringify(invoice), (error) => {
+          error ? reject(error) : resolve(invoice)
+        })
+      }
+    })
   },
 
   isAddressAndContentPaired: (address, contentId) => (

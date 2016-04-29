@@ -1,16 +1,21 @@
 const test = require('tape')
+const api = require('./server')
+
 const request = require('supertest')
 
-const apiVersion = 0
+const apiVersion = require('config/api').apiVersion
+const helper = require('test/helper')
 
 const apiUrl = (path) => {
   if (!path) path = ''
   return `/${apiVersion}/content/${path}`
 }
 
-const api = require('./server')
-
 test('route GET /0/content/:contentId', (t) => {
+  // FIXME this test fails when redis is not running
+  // That means that this test needs a side-effect, and possible does one as well
+  // go to server.js and fix that!!!!!
+
   // TODO: this test is hanging..
   // t.test('without address query', (st) => {
   //   const contentId = 'mein-artikle'
@@ -40,7 +45,7 @@ test('route GET /0/content/:contentId', (t) => {
 
         st.assert(isEqual(validates.errorsInBitcoinAddress(badAddress),
                           res.body.errors))
-        st.end()
+        return st.end()
       })
   })
 })
@@ -49,10 +54,10 @@ test('route POST /0/content', (t) => {
   const mockData = () => ({
     contentId: 'mein-artikle',
     content: 'eins zwei dri',
-    payoutAddress: require('test/helper').validAddress
+    payoutAddress: helper.validAddress
   })
 
-  const spyOnContentSave = () => require('test/helper').spyOn(
+  const spyOnContentSave = () => helper.spyOn(
     require('records/Content'),
     'save',
     (data) => Promise.resolve(data)
@@ -71,7 +76,7 @@ test('route POST /0/content', (t) => {
         const expected = `https://api.momona.com/${apiVersion}/content/${reqData.contentId}`
         st.equals(res.text, expected, 'a URL to GET the content')
         contentRecordSpy.restore()
-        st.end()
+        return st.end()
       })
   })
 
@@ -88,7 +93,7 @@ test('route POST /0/content', (t) => {
         st.assert(contentRecordSpy.called(), 'Content.save was called')
         st.equals(res.text, reqData.contentId, 'the contentId to use for future requests')
         contentRecordSpy.restore()
-        st.end()
+        return st.end()
       })
   })
   t.test('js return query', (st) => {

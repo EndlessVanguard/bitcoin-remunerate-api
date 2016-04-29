@@ -1,5 +1,6 @@
 const test = require('tape')
 const Invoice = require('./Invoice')
+
 const isEqual = require('lodash/isEqual')
 const dissoc = require('lodash/fp/dissoc')
 

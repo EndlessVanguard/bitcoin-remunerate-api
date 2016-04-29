@@ -1,5 +1,4 @@
 const test = require('tape')
-
 const transaction = require('./transaction')
 
 // test('transaction.buildTransaction', (t) => {

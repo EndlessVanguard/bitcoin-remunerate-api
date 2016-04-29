@@ -1,9 +1,10 @@
 const test = require('tape')
-const dissoc = require('lodash/fp/dissoc')
 const isValid = require('./isValid')
 
+const dissoc = require('lodash/fp/dissoc')
 const isEqual = require('lodash/isEqual')
-const validates = require('../utils/validates.js')
+
+const validates = require('utils/validates.js')
 
 const mockProperties = {
   contentId: validates.errorsInString,

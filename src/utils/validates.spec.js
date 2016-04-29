@@ -1,9 +1,10 @@
 const test = require('tape')
-const isEqual = require('lodash/isEqual')
-const includes = require('lodash/includes')
 const validates = require('./validates')
 
-const validAddress = require('../test/helper.js').validAddress
+const includes = require('lodash/includes')
+const isEqual = require('lodash/isEqual')
+
+const helper = require('test/helper')
 
 test('validates.errorsInContentId', (t) => {
   t.assert(isEqual(validates.errorsInContentId('valid-content-id'), []))
@@ -22,7 +23,7 @@ test('validates.errorsInContentId', (t) => {
 
 test('validates.errorsInBitcoinAddress', (t) => {
   t.assert(
-    isEqual(validates.errorsInBitcoinAddress(validAddress), []),
+    isEqual(validates.errorsInBitcoinAddress(helper.validAddress), []),
     'no errors in address beginning with 1')
 
   t.assert(
@@ -47,7 +48,7 @@ test('validates.errorsInBitcoinAddress', (t) => {
   ), 'Bitcoin Address can not be longer than 35 chars')
 
   t.assert(isEqual(
-    validates.errorsInBitcoinAddress(validAddress.substring(0, 25)),
+    validates.errorsInBitcoinAddress(helper.validAddress.substring(0, 25)),
     ['Bitcoin Address can not be shorter than 26 chars']
   ), 'Bitcoin Address can not be shorter than 26 chars')
 
@@ -55,16 +56,15 @@ test('validates.errorsInBitcoinAddress', (t) => {
 })
 
 test('validates.isBitcoinAddress', (t) => {
-  t.assert(validates.isBitcoinAddress(validAddress), 'valid address is valid')
+  t.assert(validates.isBitcoinAddress(helper.validAddress), 'valid address is valid')
   t.assert(!validates.isBitcoinAddress('x'), 'Bitcoin Address not starting with 1 or 3 are invalid')
   t.assert(!validates.isBitcoinAddress(1235), 'non-string addresses are invalid')
 
   t.end()
 })
 
-const validWIF = require('../test/helper.js').validWIF
 test('validates.errorsInPrivateKey', (t) => {
-  t.assert(isEqual(validates.errorsInPrivateKey(validWIF), []),
+  t.assert(isEqual(validates.errorsInPrivateKey(helper.validWIF), []),
            'valid WIF is valid')
 
   t.assert(includes(
@@ -78,12 +78,12 @@ test('validates.errorsInPrivateKey', (t) => {
   )
 
   t.assert(includes(
-    validates.errorsInPrivateKey(validWIF.substring(0, 40)),
+    validates.errorsInPrivateKey(helper.validWIF.substring(0, 40)),
     'Private Key WIF must be at least 51 characters long'
   ), 'Private Key WIF must be at least 51 characters long')
 
   t.assert(includes(
-    validates.errorsInPrivateKey(validWIF + 'abcdefgh'),
+    validates.errorsInPrivateKey(helper.validWIF + 'abcdefgh'),
     'Private Key WIF can not be longer than 52 characters'
   ), 'Private Key WIF can not be longer than 52 characters')
 
@@ -92,11 +92,11 @@ test('validates.errorsInPrivateKey', (t) => {
 
 test('validates.isBitcoinPrivateKey', (t) => {
   t.assert(
-    validates.isBitcoinPrivateKey(validWIF),
+    validates.isBitcoinPrivateKey(helper.validWIF),
     'valid WIF is valid'
   )
 
-  const badInputs = [42, 'x', validWIF + 'xyzabc', validWIF.substring(0, 49)]
+  const badInputs = [42, 'x', helper.validWIF + 'xyzabc', helper.validWIF.substring(0, 49)]
   badInputs.forEach((bad) => t.assert(!validates.isBitcoinPrivateKey(bad)))
 
   t.end()

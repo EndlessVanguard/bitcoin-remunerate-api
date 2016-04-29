@@ -28,20 +28,16 @@ function lookup (address) {
   })
 }
 
-function broadcastTransaction (transactionHex) {
-  console.log('broadcasting\n')
-  console.log(transactionHex)
-  console.log('\n\n')
-  return new Promise((resolve, reject) => {
+const broadcastTransaction = (transactionHex) => (
+  new Promise((resolve, reject) => (
     request.post({
       url: 'https://blockchain.info/pushtx',
       form: { tx: transactionHex }
-    }, (err, res, body) => {
-      if (err) { reject(err) }
-      resolve(body)
-    })
-  })
-}
+    }, (error, res, body) => (
+      error ? reject(error) : resolve(body)
+    ))
+  ))
+)
 
 function isPaid (blockchainHttpResponse) {
   if (blockchainHttpResponse === 'Input too short' || blockchainHttpResponse === 'Checksum does not validate') {
