@@ -1,3 +1,4 @@
+const isEmpty = require('lodash/isEmpty')
 const isNumber = require('lodash/isNumber')
 const isString = require('lodash/isString')
 const isUndefined = require('lodash/isUndefined')
@@ -45,13 +46,13 @@ module.exports = {
   optional: optional,
 
   errorsInBitcoinAddress: errorsInBitcoinAddress,
-  isBitcoinAddress: (address) => (errorsInBitcoinAddress(address).length === 0),
+  isBitcoinAddress: (address) => isEmpty(errorsInBitcoinAddress(address)),
 
   errorsInPrivateKey: errorsInPrivateKey,
-  isBitcoinPrivateKey: (privateKey) => (errorsInPrivateKey(privateKey).length === 0),
+  isBitcoinPrivateKey: (privateKey) => isEmpty(errorsInPrivateKey(privateKey)),
 
   errorsInCurrency: errorsInCurrency,
-  isCurrency: (currency) => (errorsInCurrency(currency).length === 0),
+  isCurrency: (currency) => isEmpty(errorsInCurrency(currency)),
 
   errorsInInteger: errorsInInteger,
   isInteger: isInteger,
@@ -67,5 +68,5 @@ module.exports = {
     return err
   },
   errorsInLabel: errorsInLabel,
-  isLabel: (label) => (errorsInLabel(label).length === 0)
+  isLabel: (label) => isEmpty(errorsInLabel(label))
 }

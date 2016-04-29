@@ -1,8 +1,9 @@
 const test = require('tape')
 const Content = require('./Content')
-const isEqual = require('lodash/isEqual')
-const dissoc = require('lodash/fp/dissoc')
+
 const assoc = require('lodash/fp/assoc')
+const dissoc = require('lodash/fp/dissoc')
+const isEqual = require('lodash/isEqual')
 
 const validContent = {
   contentId: 'my-cool-content',

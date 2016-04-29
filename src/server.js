@@ -1,16 +1,17 @@
 const isNil = require('lodash/isNil')
 
-const apiVersion = 0
-
+const apiVersion = require('config/api').apiVersion
 const Content = require('records/Content')
 const Invoice = require('records/Invoice')
 const blockchainApi = require('utils/blockchainApi')
 const validates = require('utils/validates')
 
+// init express with middleware
 const app = require('express')()
 app.use(require('cors')())
 app.use(require('body-parser').urlencoded())
 app.use(require('body-parser').json())
+
 // index
 app.get('/', (req, res) => (
   res.status(200).send(`Welcome to Momona! Do GET /${apiVersion}/content/:contentId`)
@@ -46,8 +47,8 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
 
       return blockchainApi.lookup(address)
         .then((rawAddressInformation) => {
-          const body = JSON.parse(rawAddressInformation.body)
-          if (blockchainApi.isPaid(body)) {
+          // TODO: lookup content and check price
+          if (blockchainApi.isPaid(rawAddressInformation)) {
             Invoice.markAsPaid(address)
 
             Content.find(contentId).then((content) => {
@@ -115,7 +116,7 @@ app.post(`/${apiVersion}/content`, (req, res) => {
     )
   }
 
-  req.body.price = parseInt(req.body.price)
+  req.body.price = parseInt(req.body.price, 10)
 
   return Content.save(req.body)
     .then((contentRecord) => {

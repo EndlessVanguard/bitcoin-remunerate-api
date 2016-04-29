@@ -1,49 +1,44 @@
 const async = require('async')
-const isEqual = require('lodash/fp/isEqual')
-const filter = require('lodash/filter')
-const merge = require('lodash/merge')
-const uniq = require('lodash/fp/uniq')
-const compose = require('lodash/fp/compose')
-const get = require('lodash/fp/get')
-const set = require('lodash/set')
-const map = require('lodash/fp/map')
-const head = require('lodash/fp/head')
 const bitcoin = require('bitcoinjs-lib')
+const compose = require('lodash/fp/compose')
+const filter = require('lodash/filter')
+const get = require('lodash/fp/get')
+const head = require('lodash/fp/head')
+const isEqual = require('lodash/fp/isEqual')
+const map = require('lodash/fp/map')
+const merge = require('lodash/merge')
+const set = require('lodash/set')
+const uniq = require('lodash/fp/uniq')
 
+const blockchainApi = require('utils/blockchainApi')
 const Content = require('records/Content')
 const Invoice = require('records/Invoice')
-const validates = require('utils/validates.js')
-const blockchainApi = require('utils/blockchainApi')
+const trace = require('utils/trace')
+const validates = require('utils/validates')
 
-const fetch = {
-  serviceAddress: () => {
-    // TODO: we should calculate a new keypair, track it, and respond ꙲
-    return '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
-  }
-}
+// TODO: we should calculate a new keypair, track it, and respond
+const serviceAddress = () => '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
 
 // in Satoshi
 const minimumPayoutBalance = 100000
+const minersFee = 500
 
-function calculateFee (total) {
-  const minersFee = 500
-  return {
-    payout: Math.floor((total - minersFee) * 0.91),
-    service: Math.floor((total - minersFee) * 0.09)
-  }
-}
+const calculateFee = (total) => ({
+  payout: Math.floor((total - minersFee) * 0.91),
+  service: Math.floor((total - minersFee) * 0.09)
+})
 
-function buildTransaction (transactionInfo) {
+const buildTransaction = (transactionInfo) => {
   const invoiceList = transactionInfo.inputsList
   const payoutAddress = transactionInfo.payoutAddress
   const serviceAddress = transactionInfo.serviceAddress
-  const tx = new bitcoin.TransactionBuilder()
   console.assert(invoiceList.length > 0, 'invoiceList is empty')
   console.assert(validates.isBitcoinAddress(payoutAddress),
                  'payoutAddress must be valid Bitcoin Address', payoutAddress)
   console.assert(validates.isBitcoinAddress(serviceAddress),
                  'serviceAddress must be valid Bitcoin Address', serviceAddress)
 
+  const tx = new bitcoin.TransactionBuilder()
   // Does 2 things - attach the TX hash to the output object (for convenience),
   // and returns all the tx outputs for all tx made to invoice
   var txo = (invoice) => (
@@ -58,8 +53,7 @@ function buildTransaction (transactionInfo) {
   const listOfUTXO = (map(head, map(myUtxo, invoiceList)))
   listOfUTXO.forEach((utxo) => tx.addInput(utxo.hash, utxo.n))
 
-  const totalPayout = invoiceList.reduce(
-    (sum, x) => sum + x['final_balance'], 0)
+  const totalPayout = invoiceList.reduce((sum, x) => sum + x['final_balance'], 0)
   console.assert(totalPayout > minimumPayoutBalance,
                  `totalPayout ${totalPayout} is less than the minimumPayoutBalance ${minimumPayoutBalance}`)
   const amount = calculateFee(totalPayout)
@@ -78,42 +72,44 @@ function buildTransaction (transactionInfo) {
     const keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
     tx.sign(index, keyPair)
   })
+
   return tx.build().toHex()
 }
+
+const lookupAddressFromBlockchainApi = compose(blockchainApi.lookup, get('address'))
 
 // add finalBalance, lastTransaction to every input
 // Fetch and merge all TX data we need as input in our transactions
 const addBlockchainInformationToInvoices = (invoiceList) => (
   new Promise((resolve, reject) => (
     async.mapLimit(invoiceList, 5,
-      async.asyncify(compose(blockchainApi.lookup, get('address'))),
+      async.asyncify(lookupAddressFromBlockchainApi),
       (err, txInfo) => err ? reject(txInfo) : resolve(txInfo)
     )
   )).then((txInfo) => merge(invoiceList, txInfo))
 )
 
-function payoutContent (contentId) {
-  return Invoice.findAll(contentId)
-    .then((invoices) => Promise.all(
-      invoices.map((inv) => (Invoice.find(inv.address)))))
-    .then((invoices) => invoices.filter((inv) => 'paymentTimestamp' in inv))
+const findInvoiceWithAddress = compose(Invoice.find, get('address'))
+
+const payoutContent = (contentId) => (
+  Invoice.findAll(contentId)
+    .then((invoices) => Promise.all(map(findInvoiceWithAddress, invoices)))
+    .then((invoices) => invoices.filter((invoice) => 'paymentTimestamp' in invoice))
     .then(uniq)
     .then(addBlockchainInformationToInvoices)
-    .then((invoiceList) => filter(invoiceList, (inv) => inv.final_balance > 0))
-    .then((inputsList) => {
-      return Content.find(contentId).then((content) => ({
+    .then((invoiceList) => filter(invoiceList, (invoice) => invoice.final_balance > 0))
+    .then((inputsList) => (
+      Content.find(contentId).then((content) => ({
         inputsList: inputsList.filter((x) => !!x), // filter undefined etc
         payoutAddress: content.payoutAddress,
-        serviceAddress: fetch.serviceAddress()
+        serviceAddress: serviceAddress()
       }))
-    })
+    ))
     .then(buildTransaction)
+    .then(trace('transaction: Broadcasting'))
     .then(blockchainApi.broadcastTransaction)
-    .then((result) => {
-      console.log('Message from blockchain.info:', result)
-      return result
-    })
-}
+    .finally(trace('transacton: Message from blockchain.info'))
+)
 
 module.exports = {
   addBlockchainInformationToInvoices: addBlockchainInformationToInvoices,

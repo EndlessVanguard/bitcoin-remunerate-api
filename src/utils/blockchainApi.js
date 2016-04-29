@@ -1,42 +1,36 @@
-const request = require('request')
 const isEqual = require('lodash/fp/isEqual')
+const request = require('request')
 
-function blockchainAddressLookupUrl (address) {
-  return 'https://blockchain.info/rawaddr/' + address
-}
+const blockchainAddressLookupUrl = (address) => `https://blockchain.info/rawaddr/${address}`
+
+const isRateLimited = (body) => (
+  isEqual(body, 'Maximum concurrent requests from this IP reached. Please try again shortly.')
+)
 
 const lookup = (address) => (
   new Promise((resolve, reject) => (
-    request.get(
-      { url: blockchainAddressLookupUrl(address) },
-      (error, response, body) => {
-        if (error) {
-          return reject(error)
-        } else {
-          if (isEqual(body, 'Maximum concurrent requests from this IP reached. Please try again shortly.')) {
-            reject(body)
-          }
-          return resolve(JSON.parse(body))
-        }
-      }
-    )
+    request.get({
+      url: blockchainAddressLookupUrl(address)
+    }, (error, response, body) => (
+      error
+      ? reject(error)
+      : isRateLimited(body)
+        ? reject(body)
+        : resolve(JSON.parse(body))
+    ))
   ))
 )
 
-function broadcastTransaction (transactionHex) {
-  console.log('broadcasting\n')
-  console.log(transactionHex)
-  console.log('\n\n')
-  return new Promise((resolve, reject) => {
+const broadcastTransaction = (transactionHex) => (
+  new Promise((resolve, reject) => (
     request.post({
       url: 'https://blockchain.info/pushtx',
       form: { tx: transactionHex }
-    }, (err, res, body) => {
-      if (err) { reject(err) }
-      resolve(body)
-    })
-  })
-}
+    }, (error, res, body) => (
+      error ? reject(error) : resolve(body)
+    ))
+  ))
+)
 
 function isPaid (blockchainHttpResponse) {
   if (blockchainHttpResponse === 'Input too short' || blockchainHttpResponse === 'Checksum does not validate') {

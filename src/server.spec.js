@@ -1,14 +1,15 @@
 const test = require('tape')
+const api = require('./server')
+
 const request = require('supertest')
 
-const apiVersion = 0
+const apiVersion = require('config/api').apiVersion
+const helper = require('test/helper')
 
 const apiUrl = (path) => {
   if (!path) path = ''
   return `/${apiVersion}/content/${path}`
 }
-
-const api = require('./server')
 
 test('route GET /0/content/:contentId', (t) => {
   // TODO: this test is hanging..
@@ -49,10 +50,10 @@ test('route POST /0/content', (t) => {
   const mockData = () => ({
     contentId: 'mein-artikle',
     content: 'eins zwei dri',
-    payoutAddress: require('test/helper').validAddress
+    payoutAddress: helper.validAddress
   })
 
-  const spyOnContentSave = () => require('test/helper').spyOn(
+  const spyOnContentSave = () => helper.spyOn(
     require('records/Content'),
     'save',
     (data) => Promise.resolve(data)

@@ -1,10 +1,12 @@
+const isNil = require('lodash/isNil')
+const filter = require('lodash/fp/filter')
+const mapValues = require('lodash/fp/mapValues')
+
+const isValid = require('utils/isValid')
+const redisDb = require('config/redis')
 const validates = require('utils/validates')
 
 const redisKey = 'invoice'
-const isValid = require('utils/isValid')
-
-const filter = require('lodash/fp/filter')
-const mapValues = require('lodash/fp/mapValues')
 
 const Invoice = {
   properties: Object.freeze({
@@ -15,51 +17,46 @@ const Invoice = {
   }),
 
   // database
-  find: (address) => {
-    const redisDb = require('config/redis')
-    return new Promise((resolve, reject) => {
-      redisDb.hget(redisKey, address, (error, invoiceData) => {
-        if (error) reject(error)
-        resolve(JSON.parse(invoiceData))
-      })
+  find: (address) => (
+    new Promise((resolve, reject) => (
+      redisDb.hget(redisKey, address, (error, invoiceData) => (
+        error ? reject(error) : resolve(JSON.parse(invoiceData))))
+    ))
+  ),
+  findAll: (contentId) => (
+    new Promise((resolve, reject) => (
+      redisDb.hgetall(redisKey, (error, invoiceMap) => (
+        error ? reject(error) : resolve(mapValues(JSON.parse, invoiceMap))))
+    )).then(filter((invoice) => invoice.contentId === contentId))
+  ),
+  save: (data) => (
+    new Promise((resolve, reject) => {
+      if (Invoice.isValidInvoice(data)) {
+        redisDb.hset(redisKey, data.address, JSON.stringify(data), (error) => (
+          error ? reject(error) : resolve(data)))
+      } else {
+        reject(Invoice.errorsInInvoice(data))
+      }
     })
-  },
-  findAll: (contentId) => {
-    const redisDb = require('config/redis')
-    return new Promise((resolve, reject) => {
-      redisDb.hgetall(redisKey, (error, invoiceMap) => {
-        if (error) reject(error)
-        resolve(mapValues(JSON.parse, invoiceMap))
-      })
-    })
-    .then(filter((invoice) => invoice.contentId === contentId))
-  },
-  save: (data) => {
-    const redisDb = require('config/redis')
-    if (Invoice.isValidInvoice(data)) {
-      redisDb.hset(redisKey, data.address, JSON.stringify(data))
-      return true
-    }
-    return false
-  },
+  ),
 
   // helpers
-  isAddressAndContentPaired: (address, contentId) => {
-    const isNil = require('lodash/isNil')
-    return Invoice.find(address)
+  isAddressAndContentPaired: (address, contentId) => (
+    Invoice.find(address)
       .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))
-  },
+  ),
 
-  markAsPaid: (address) => {
-    return Invoice.find(address)
+  markAsPaid: (address) => (
+    Invoice.find(address)
       .then((invoiceRecord) => {
         if (!invoiceRecord.paymentTimestamp) {
           invoiceRecord.paymentTimestamp = Date.now()
           return Invoice.save(invoiceRecord)
         }
       })
-  },
+  ),
 
+  // TODO: have a pool of keypairs available
   newKeypair: (contentId) => {
     const bitcoin = require('bitcoinjs-lib')
     // generate a keypair
