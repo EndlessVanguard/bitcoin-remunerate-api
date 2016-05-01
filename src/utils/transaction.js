@@ -1,13 +1,13 @@
 const async = require('async')
 const bitcoin = require('bitcoinjs-lib')
 const compose = require('lodash/fp/compose')
-const filter = require('lodash/filter')
+const filter = require('lodash/fp/filter')
+const flatMap = require('lodash/fp/flatMap')
 const get = require('lodash/fp/get')
-const head = require('lodash/fp/head')
 const isEqual = require('lodash/fp/isEqual')
 const map = require('lodash/fp/map')
-const merge = require('lodash/merge')
-const set = require('lodash/set')
+const merge = require('lodash/fp/merge')
+const set = require('lodash/fp/set')
 const uniq = require('lodash/fp/uniq')
 
 const blockchainApi = require('utils/blockchainApi')
@@ -29,7 +29,7 @@ const calculateFee = (total) => ({
 })
 
 const buildTransaction = (transactionInfo) => {
-  const invoiceList = transactionInfo.inputsList
+  const invoiceList = transactionInfo.invoiceList
   const payoutAddress = transactionInfo.payoutAddress
   const serviceAddress = transactionInfo.serviceAddress
   console.assert(invoiceList.length > 0, 'invoiceList is empty')
@@ -39,19 +39,21 @@ const buildTransaction = (transactionInfo) => {
                  'serviceAddress must be valid Bitcoin Address', serviceAddress)
 
   const tx = new bitcoin.TransactionBuilder()
-  // Does 2 things - attach the TX hash to the output object (for convenience),
-  // and returns all the tx outputs for all tx made to invoice
-  var txo = (invoice) => (
-    head(
-      map((tx) => (map((out) => set(out, 'hash', tx.hash),
-                       tx.out)),
-          invoice.txs)))
 
-  const myUtxo = (invoice) => (txo(invoice).filter((txo) => (
-    !txo.spent && isEqual(txo.addr, invoice.address))))
+  // returns all unspent outputs
+  // annotated with the transaction hash and the Content privateKey
+  const getUnspentOutputs = flatMap((invoice) => (
+    flatMap((tx) => (
+      flatMap(
+        compose(set('hash', tx.hash), set('privateKey', invoice.privateKey)),
+        filter(
+          (out) => (!out.spent && isEqual(out.addr, invoice.address)),
+          tx.out))),
+      invoice.txs)
+  ))
 
-  const listOfUTXO = (map(head, map(myUtxo, invoiceList)))
-  listOfUTXO.forEach((utxo) => tx.addInput(utxo.hash, utxo.n))
+  const unspentOutputs = getUnspentOutputs(invoiceList)
+  unspentOutputs.forEach((output) => tx.addInput(output.hash, output.n))
 
   const totalPayout = invoiceList.reduce((sum, x) => sum + x['final_balance'], 0)
   console.assert(totalPayout > minimumPayoutBalance,
@@ -68,7 +70,7 @@ const buildTransaction = (transactionInfo) => {
     tx.addOutput(serviceAddress, amount.service)
   }
 
-  invoiceList.forEach((input, index) => {
+  unspentOutputs.forEach((input, index) => {
     const keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
     tx.sign(index, keyPair)
   })
@@ -86,7 +88,7 @@ const addBlockchainInformationToInvoices = (invoiceList) => (
       async.asyncify(lookupAddressFromBlockchainApi),
       (err, txInfo) => err ? reject(txInfo) : resolve(txInfo)
     )
-  )).then((txInfo) => merge(invoiceList, txInfo))
+  )).then(merge(invoiceList))
 )
 
 const findInvoiceWithAddress = compose(Invoice.find, get('address'))
@@ -97,10 +99,10 @@ const payoutContent = (contentId) => (
     .then((invoices) => invoices.filter((invoice) => 'paymentTimestamp' in invoice))
     .then(uniq)
     .then(addBlockchainInformationToInvoices)
-    .then((invoiceList) => filter(invoiceList, (invoice) => invoice.final_balance > 0))
-    .then((inputsList) => (
+    .then(filter((invoice) => invoice.final_balance > 0))
+    .then((invoiceList) => (
       Content.find(contentId).then((content) => ({
-        inputsList: inputsList.filter((x) => !!x), // filter undefined etc
+        invoiceList: invoiceList,
         payoutAddress: content.payoutAddress,
         serviceAddress: serviceAddress()
       }))
