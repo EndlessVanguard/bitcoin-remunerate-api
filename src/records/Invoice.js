@@ -3,6 +3,7 @@ const bitcoin = require('bitcoinjs-lib')
 const filter = require('lodash/fp/filter')
 const isNil = require('lodash/isNil')
 const mapValues = require('lodash/fp/mapValues')
+const get = require('lodash/fp/get')
 
 const isValid = require('utils/isValid')
 const validates = require('utils/validates')
@@ -54,6 +55,9 @@ const Invoice = {
       .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))),
 
   markInvoiceAsPaid: (invoice) => assoc(invoice, 'paymentTimestamp', Date.now()),
+
+  // FIXME I think this function is never used, except for in the test
+  isPaid: (invoice) => validates.isInteger(get('paymentTimestamp', invoice)),
 
   create: (contentId) => {
     const keypair = bitcoin.ECPair.makeRandom()
