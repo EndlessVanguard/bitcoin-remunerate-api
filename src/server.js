@@ -147,19 +147,21 @@ const sendMessage = (message) => ({
 })
 
 const paymentPrompt = (address, contentRecord) => {
-  const label = contentRecord.label
-
   var satoshis
   if (contentRecord.currency === 'satoshi') {
     satoshis = contentRecord.price
   } else {
     satoshis = currency.convertToSatoshi(
       contentRecord.price,
-      contentRecord.currency,
-      currency.currencyTable
+      contentRecord.currency
     )
   }
-  return { address, label, satoshis }
+  return {
+    address: address,
+    label: contentRecord.label,
+    satoshis: satoshis,
+    currency: contentRecord.currency
+  }
 }
 
 module.exports = {
