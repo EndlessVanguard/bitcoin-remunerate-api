@@ -1,6 +1,7 @@
 const isNil = require('lodash/isNil')
 const filter = require('lodash/fp/filter')
 const mapValues = require('lodash/fp/mapValues')
+const get = require('lodash/fp/get')
 
 const isValid = require('utils/isValid')
 const redisDb = require('config/redis')
@@ -45,6 +46,8 @@ const Invoice = {
     Invoice.find(address)
       .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))
   ),
+
+  isPaid: (invoice) => validates.isInteger(get('paymentTimestamp', invoice)),
 
   markAsPaid: (address) => (
     Invoice.find(address)

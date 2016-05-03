@@ -24,3 +24,11 @@ test('errorsInInvoice', (t) => {
   )
   t.end()
 })
+
+test('isPaid', (t) => {
+  t.assert(Invoice.isPaid({ paymentTimestamp: Date.now() }),
+           'when there is a paymentTimestamp, Invoice has been paid')
+  t.assert(!Invoice.isPaid({}),
+           'when there is no paymentTimestamp, Invoice has not been paid')
+  t.end()
+})
