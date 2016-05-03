@@ -4,7 +4,7 @@ const isEqual = require('lodash/isEqual')
 const dissoc = require('lodash/fp/dissoc')
 
 const validInvoice = {
-  createdAt: 1462287817,
+  createdAt: 1462290285746,
   address: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw',
   contentId: 'my-cool-content',
   privateKey: 'L1dHE6RmNw345p2wy5m6dzyULAzqM96HdeHrfAKgU5sLYrNYpup9'
@@ -12,7 +12,7 @@ const validInvoice = {
 
 test('errorsInInvoice', (t) => {
   t.assert(isEqual(Invoice.errorsInInvoice(validInvoice), []),
-           'Valid content contains no errors')
+           'Valid Invoice contains no errors')
 
   t.assert(!Invoice.isValidInvoice(dissoc(validInvoice, 'privateKey')),
            'Invoice without privateKey is invalid')

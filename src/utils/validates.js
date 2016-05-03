@@ -40,6 +40,13 @@ const errorsInLabel = (label) => {
   return err
 }
 
+const errorsInJavascriptTimestamp = (timestamp) => {
+  var err = []
+  if (timestamp < 1462290285746) { err.push('Timestamp too old') }
+
+  return err
+}
+
 const optional = (fn) => (value) => (isUndefined(value) ? [] : fn(value))
 
 module.exports = {
@@ -68,5 +75,7 @@ module.exports = {
     return err
   },
   errorsInLabel: errorsInLabel,
-  isLabel: (label) => (errorsInLabel(label).length === 0)
+  isLabel: (label) => (errorsInLabel(label).length === 0),
+
+  errorsInJavascriptTimestamp: errorsInJavascriptTimestamp
 }

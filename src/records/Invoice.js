@@ -5,10 +5,11 @@ const isValid = require('utils/isValid')
 
 const Invoice = {
   properties: Object.freeze({
+    createdAt: validates.errorsInJavascriptTimestamp,
     address: validates.errorsInBitcoinAddress,
     contentId: validates.errorsInString,
     privateKey: validates.errorsInPrivateKey,
-    paymentTimestamp: validates.optional(validates.errorsInInteger)
+    paymentTimestamp: validates.optional(validates.errorsInJavascriptTimestamp)
   }),
 
   // database
@@ -31,6 +32,7 @@ const Invoice = {
     })
   },
   save: (data) => {
+    // TODO this should return a promise, so we can check for errors
     const redisDb = require('config/redis')
     if (Invoice.isValidInvoice(data)) {
       redisDb.hset(redisKey, data.address, JSON.stringify(data))
@@ -57,16 +59,23 @@ const Invoice = {
   },
 
   newKeypair: (contentId) => {
+    // This function should be rewritten, and we should not do save() from here
+    /* Instead we should call as
+       Invoice.save(Invoice.newKaypair(contentId))
+     */
+    // Since it has DB side effects, it's untestable (without mocking - but the lord sacrificed his only son so that we would not have to write mocks!)
     const bitcoin = require('bitcoinjs-lib')
     // generate a keypair
     const keypair = bitcoin.ECPair.makeRandom()
     const address = keypair.getAddress()
     const privateKey = keypair.toWIF()
+    const createdAt = Date.now()
 
     Invoice.save({
       address,
       contentId,
-      privateKey
+      privateKey,
+      createdAt
     })
 
     return address
