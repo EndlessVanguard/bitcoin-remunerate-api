@@ -1,37 +1,42 @@
 const isEqual = require('lodash/fp/isEqual')
 const request = require('request')
 
-const blockchainAddressLookupUrl = (address) => `https://blockchain.info/rawaddr/${address}`
+const blockchainUrl = (path) => `https://blockchain.info/${path}`
 
-const isRateLimited = (body) => (
-  isEqual(body, 'Maximum concurrent requests from this IP reached. Please try again shortly.')
-)
-
-const lookup = (address) => (
-  new Promise((resolve, reject) => (
-    request.get({
-      url: blockchainAddressLookupUrl(address)
-    }, (error, response, body) => (
-      error
-      ? reject(error)
-      : isRateLimited(body)
-        ? reject(body)
-        : resolve(JSON.parse(body))
-    ))
-  ))
-)
+// api calls
 
 const broadcastTransaction = (transactionHex) => (
   new Promise((resolve, reject) => (
     request.post({
-      url: 'https://blockchain.info/pushtx',
+      url: blockchainUrl('pushtx'),
       form: { tx: transactionHex }
-    }, (error, res, body) => (
-      error ? reject(error) : resolve(body)
-    ))
+    }, (error, res, body) => {
+      if (error) {
+        reject(error)
+      } else {
+        isRateLimited(body) ? reject(body) : resolve(body)
+      }
+    })
   ))
 )
 
+const getAddress = (address) => (
+  new Promise((resolve, reject) => (
+    request.get({
+      url: blockchainUrl(`rawaddr/${address}`)
+    }, (error, response, body) => {
+      if (error) {
+        reject(error)
+      } else {
+        isRateLimited(body) ? reject(body) : resolve(JSON.parse(body))
+      }
+    })
+  ))
+)
+
+// helpers
+
+// TODO: do we need this method here, or should it be chained in getAddress?
 function isPaid (blockchainHttpResponse) {
   if (blockchainHttpResponse === 'Input too short' || blockchainHttpResponse === 'Checksum does not validate') {
     return false
@@ -41,8 +46,12 @@ function isPaid (blockchainHttpResponse) {
   return isPaid
 }
 
+const isRateLimited = (body) => (
+  isEqual(body, 'Maximum concurrent requests from this IP reached. Please try again shortly.')
+)
+
 module.exports = {
-  broadcastTransaction: broadcastTransaction,
-  lookup: lookup,
-  isPaid: isPaid
+  broadcastTransaction,
+  getAddress,
+  isPaid
 }

@@ -45,7 +45,7 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
         ))
       }
 
-      return blockchainApi.lookup(address)
+      return blockchainApi.getAddress(address)
         .then((rawAddressInformation) => {
           // TODO: lookup content and check price
           if (blockchainApi.isPaid(rawAddressInformation)) {
