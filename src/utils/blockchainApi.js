@@ -28,16 +28,25 @@ function lookup (address) {
   })
 }
 
+const blockchainUrl = (path) => `https://blockchain.info/${path}`
+
+// api calls
 const broadcastTransaction = (transactionHex) => (
   new Promise((resolve, reject) => (
     request.post({
-      url: 'https://blockchain.info/pushtx',
+      url: blockchainUrl('pushtx'),
       form: { tx: transactionHex }
-    }, (error, res, body) => (
-      error ? reject(error) : resolve(body)
-    ))
+    }, (error, res, body) => {
+      if (error || includes(lookupErrors, trim(body))) {
+        return reject(error || body)
+      } else {
+        return resolve(body)
+      }
+    })
   ))
 )
+
+// helpers
 
 function isPaid (blockchainHttpResponse) {
   if (blockchainHttpResponse === 'Input too short' || blockchainHttpResponse === 'Checksum does not validate') {
@@ -49,7 +58,7 @@ function isPaid (blockchainHttpResponse) {
 }
 
 module.exports = {
-  broadcastTransaction: broadcastTransaction,
-  lookup: lookup,
-  isPaid: isPaid
+  broadcastTransaction,
+  lookup,
+  isPaid
 }
