@@ -2,6 +2,7 @@ const validates = require('utils/validates')
 
 const redisKey = 'invoice'
 const isValid = require('utils/isValid')
+const bitcoin = require('bitcoinjs-lib')
 
 const Invoice = {
   properties: Object.freeze({
@@ -12,7 +13,6 @@ const Invoice = {
     paymentTimestamp: validates.optional(validates.errorsInJavascriptTimestamp)
   }),
 
-  // database
   find: (address) => {
     const redisDb = require('config/redis')
     return new Promise((resolve, reject) => {
@@ -31,6 +31,7 @@ const Invoice = {
       })
     })
   },
+  // MUTATING
   save: (data) => {
     // TODO this should return a promise, so we can check for errors
     const redisDb = require('config/redis')
@@ -41,13 +42,15 @@ const Invoice = {
     return false
   },
 
-  // helpers
   isAddressAndContentPaired: (address, contentId) => {
     const isNil = require('lodash/isNil')
     return Invoice.find(address)
       .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))
   },
 
+  // MUTATING
+  // TODO remove mutation from here. It be replaced with assoc(invoice, 'paymentTimestamp', Date.now())
+  // Better if only Invoice.save does mutation - then we have no more than one place to worry about screwing up
   markAsPaid: (address) => {
     return Invoice.find(address)
       .then((invoiceRecord) => {
@@ -58,27 +61,18 @@ const Invoice = {
       })
   },
 
-  newKeypair: (contentId) => {
-    // This function should be rewritten, and we should not do save() from here
-    /* Instead we should call as
-       Invoice.save(Invoice.newKaypair(contentId))
-     */
-    // Since it has DB side effects, it's untestable (without mocking - but the lord sacrificed his only son so that we would not have to write mocks!)
-    const bitcoin = require('bitcoinjs-lib')
-    // generate a keypair
+  create: (contentId) => {
     const keypair = bitcoin.ECPair.makeRandom()
     const address = keypair.getAddress()
     const privateKey = keypair.toWIF()
     const createdAt = Date.now()
 
-    Invoice.save({
+    return {
       address,
       contentId,
       privateKey,
       createdAt
-    })
-
-    return address
+    }
   },
 
   // validation

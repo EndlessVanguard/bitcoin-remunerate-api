@@ -3,6 +3,14 @@ const Invoice = require('./Invoice')
 const isEqual = require('lodash/isEqual')
 const dissoc = require('lodash/fp/dissoc')
 
+test('creating new invoices', (t) => {
+  // ☯λ☯λ☯λ \\
+  t.assert(Invoice.isValidInvoice(
+    Invoice.create('momona-demo-video')
+  ), 'Invoice.new creates valid invoices')
+  t.end()
+})
+
 const validInvoice = {
   createdAt: 1462290285746,
   address: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw',
