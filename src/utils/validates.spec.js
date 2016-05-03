@@ -139,3 +139,14 @@ test('validates.errorsInLabel', (t) => {
   )
   t.end()
 })
+
+test('validates.optional', (t) => {
+  const wrappedValidation = validates.optional(() => (['options ∀']))
+
+  t.assert(isEqual(wrappedValidation(), []),
+          'when value is "undefined" there will be no error')
+  t.assert(isEqual(wrappedValidation(null), ['options ∀']),
+          'when value is not "undefined" wrapped validation is called')
+
+  t.end()
+})

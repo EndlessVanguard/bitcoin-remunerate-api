@@ -1,5 +1,6 @@
-const isString = require('lodash/isString')
 const isNumber = require('lodash/isNumber')
+const isString = require('lodash/isString')
+const isUndefined = require('lodash/isUndefined')
 
 const errorsInBitcoinAddress = (address) => {
   var err = []
@@ -38,7 +39,11 @@ const errorsInLabel = (label) => {
   return err
 }
 
+const optional = (fn) => (value) => (isUndefined(value) ? [] : fn(value))
+
 module.exports = {
+  optional: optional,
+
   errorsInBitcoinAddress: errorsInBitcoinAddress,
   isBitcoinAddress: (address) => (errorsInBitcoinAddress(address).length === 0),
 

@@ -7,8 +7,8 @@ const Invoice = {
   properties: Object.freeze({
     address: validates.errorsInBitcoinAddress,
     contentId: validates.errorsInString,
-    privateKey: validates.errorsInPrivateKey
-    // optional: paymentTimestamp: validates.errorsInInteger
+    privateKey: validates.errorsInPrivateKey,
+    paymentTimestamp: validates.optional(validates.errorsInInteger)
   }),
 
   // database
