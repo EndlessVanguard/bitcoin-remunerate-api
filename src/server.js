@@ -1,13 +1,23 @@
-const isNil = require('lodash/isNil')
-
 const apiVersion = 0
 
 const Content = require('records/Content')
 const Invoice = require('records/Invoice')
 const blockchainApi = require('utils/blockchainApi')
+const currency = require('utils/currency.js')
+
 const validates = require('utils/validates')
+const includes = require('lodash/includes')
+const isNil = require('lodash/isNil')
 
 const app = require('express')()
+
+if (includes(process.argv, 'init')) {
+  // Don't run on normal require(), since it is a side-effecty and IO-y function
+  // Damn, I love our code base
+  console.log('Init currency table state synchronization')
+  currency.initCurrencyConversionUpdating()
+}
+
 app.use(require('cors')())
 app.use(require('body-parser').urlencoded())
 app.use(require('body-parser').json())
@@ -138,7 +148,7 @@ app.post(`/${apiVersion}/content`, (req, res) => {
 
 const port = 3000
 const server = app.listen(port, function () {
-  console.log('server on', port, '😎')
+  console.log(`server on ${port} 😎 Time is ${new Date()}`)
 })
 
 // helper for response formats
@@ -146,17 +156,12 @@ const sendMessage = (message) => ({
   message: message
 })
 
-const paymentPrompt = (address, contentRecord) => {
-  const label = contentRecord.label
-
-  if (contentRecord.currency === 'satoshi') {
-    const satoshis = contentRecord.price
-
-    return { address, label, satoshis }
-  } else {
-    throw Error('Bad currency, and I have yet to learn how to convert')
-  }
-}
+const paymentPrompt = (address, contentRecord) => ({
+  address: address,
+  label: contentRecord.label,
+  satoshis: currency.convertToSatoshi(contentRecord.price, contentRecord.currency),
+  currency: contentRecord.currency
+})
 
 module.exports = {
   app: app,

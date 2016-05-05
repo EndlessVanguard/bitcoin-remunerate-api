@@ -24,7 +24,7 @@
     "request": "^2.69.0"
   },
   "scripts": {
-    "start": "NODE_PATH=./src node src/server.js",
+    "start": "NODE_PATH=./src node src/server.js init",
     "devserver": "npm run lint && parallelshell 'npm run start-redis' 'npm run start'",
     "devserver-watch": "nodemon -I -q -x 'npm run devserver' -w 'src/'",
     "lint": "standard",
