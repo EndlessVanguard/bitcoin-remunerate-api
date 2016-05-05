@@ -55,12 +55,15 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
         .then((rawAddressInformation) => {
           const body = JSON.parse(rawAddressInformation.body)
           if (blockchainApi.isPaid(body)) {
-            Invoice.markAsPaid(address)
+            Invoice.find(address).then((invoice) => {
+              Invoice.save(Invoice.markInvoiceAsPaid(invoice))
+            })
 
-            Content.find(contentId).then((content) => {
+            Content.find(contentId).then((content) => (
               res.status(200).send(content.content)
-            }).catch((error) => {
+            )).catch((error) => {
               console.log(error)
+
               return res.status(500).send()
             })
           } else {

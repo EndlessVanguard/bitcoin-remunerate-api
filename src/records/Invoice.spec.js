@@ -7,7 +7,7 @@ test('creating new invoices', (t) => {
   // ☯λ☯λ☯λ \\
   t.assert(Invoice.isValidInvoice(
     Invoice.create('momona-demo-video')
-  ), 'Invoice.new creates valid invoices')
+  ), 'Invoice.create creates valid invoices')
   t.end()
 })
 
