@@ -2,16 +2,19 @@ const validates = require('utils/validates')
 
 const redisKey = 'invoice'
 const isValid = require('utils/isValid')
+const bitcoin = require('bitcoinjs-lib')
+const assoc = require('lodash/fp/assoc')
+const isNil = require('lodash/isNil')
 
 const Invoice = {
   properties: Object.freeze({
+    createdAt: validates.errorsInJavascriptTimestamp,
     address: validates.errorsInBitcoinAddress,
     contentId: validates.errorsInString,
     privateKey: validates.errorsInPrivateKey,
-    paymentTimestamp: validates.optional(validates.errorsInInteger)
+    paymentTimestamp: validates.optional(validates.errorsInJavascriptTimestamp)
   }),
 
-  // database
   find: (address) => {
     const redisDb = require('config/redis')
     return new Promise((resolve, reject) => {
@@ -30,46 +33,35 @@ const Invoice = {
       })
     })
   },
-  save: (data) => {
+  // MUTATING
+  save: (invoice) => {
+    // TODO this should return a promise, so we can check for errors
     const redisDb = require('config/redis')
-    if (Invoice.isValidInvoice(data)) {
-      redisDb.hset(redisKey, data.address, JSON.stringify(data))
+    if (Invoice.isValidInvoice(invoice)) {
+      redisDb.hset(redisKey, invoice.address, JSON.stringify(invoice))
       return true
     }
     return false
   },
 
-  // helpers
-  isAddressAndContentPaired: (address, contentId) => {
-    const isNil = require('lodash/isNil')
-    return Invoice.find(address)
-      .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))
-  },
+  isAddressAndContentPaired: (address, contentId) => (
+    Invoice.find(address)
+           .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))),
 
-  markAsPaid: (address) => {
-    return Invoice.find(address)
-      .then((invoiceRecord) => {
-        if (!invoiceRecord.paymentTimestamp) {
-          invoiceRecord.paymentTimestamp = Date.now()
-          Invoice.save(invoiceRecord)
-        }
-      })
-  },
+  markInvoiceAsPaid: (invoice) => assoc(invoice, 'paymentTimestamp', Date.now()),
 
-  newKeypair: (contentId) => {
-    const bitcoin = require('bitcoinjs-lib')
-    // generate a keypair
+  create: (contentId) => {
     const keypair = bitcoin.ECPair.makeRandom()
     const address = keypair.getAddress()
     const privateKey = keypair.toWIF()
+    const createdAt = Date.now()
 
-    Invoice.save({
+    return {
       address,
       contentId,
-      privateKey
-    })
-
-    return address
+      privateKey,
+      createdAt
+    }
   },
 
   // validation

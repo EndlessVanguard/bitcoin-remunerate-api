@@ -1,19 +1,23 @@
 const request = require('request')
+const includes = require('lodash/includes')
+const trim = require('lodash/trim')
 
-function blockchainAddressLookupUrl (address) {
-  return 'https://blockchain.info/rawaddr/' + address
-}
+const blockchainAddressLookupUrl = (address) => (
+  'https://blockchain.info/rawaddr/' + address)
 
+// Sometimes blockchain.info sends errors with status 200
+// This is how we deal with that
+const lookupErrors = ['Checksum does not validate']
 function lookup (address) {
   return new Promise((resolve, reject) => {
     request.get({
       url: blockchainAddressLookupUrl(address)
     }, (error, response, body) => {
-      if (!error) {
-        resolve(response)
+      if (error || includes(lookupErrors, trim(body))) {
+        return reject(error || body)
       } else {
-        console.log('error!', error, response)
-        reject(error)
+        // FIXME should give back response.body
+        return resolve(response)
       }
     })
   })

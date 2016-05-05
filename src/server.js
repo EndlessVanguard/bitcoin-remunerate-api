@@ -26,10 +26,16 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
   const contentId = req.params.contentId
 
   if (isNil(address)) {
-    const newAddress = Invoice.newKeypair(contentId)
-    return Content.find(contentId).then((content) => (
-      res.status(402).json(paymentPrompt(newAddress, content))
-    ))
+    return Content.find(contentId).then((content) => {
+      const invoice = Invoice.create(contentId)
+      Invoice.save(invoice) // TODO have Invoice.save return a Promise
+
+      return res.status(402).json(paymentPrompt(invoice.address, content))
+    })
+    .catch((err) => {
+      console.log(err)
+      res.status(404).send('404 Not Found')
+    })
   }
   if (!validates.isBitcoinAddress(address)) {
     return res.status(400).json({errors: validates.errorsInBitcoinAddress(address)})
@@ -38,22 +44,26 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
   Invoice.isAddressAndContentPaired(address, contentId)
     .then((addressFound) => {
       if (!addressFound) {
-        const newAddress = Invoice.newKeypair(contentId)
-        Content.find(contentId).then((content) => (
-          res.status(402).json(paymentPrompt(newAddress, content))
-        ))
+        Content.find(contentId).then((content) => {
+          const invoice = Invoice.create(contentId)
+          Invoice.save(invoice) // FIXME should return promise
+          return res.status(402).json(paymentPrompt(invoice.address, content))
+        })
       }
 
       return blockchainApi.lookup(address)
         .then((rawAddressInformation) => {
           const body = JSON.parse(rawAddressInformation.body)
           if (blockchainApi.isPaid(body)) {
-            Invoice.markAsPaid(address)
+            Invoice.find(address).then((invoice) => {
+              Invoice.save(Invoice.markInvoiceAsPaid(invoice))
+            })
 
-            Content.find(contentId).then((content) => {
+            Content.find(contentId).then((content) => (
               res.status(200).send(content.content)
-            }).catch((error) => {
+            )).catch((error) => {
               console.log(error)
+
               return res.status(500).send()
             })
           } else {
