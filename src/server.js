@@ -3,7 +3,7 @@ const apiVersion = 0
 const Content = require('records/Content')
 const Invoice = require('records/Invoice')
 const blockchainApi = require('utils/blockchainApi')
-const currency = require('./utils/currency.js')
+const currency = require('utils/currency.js')
 
 const validates = require('utils/validates')
 const includes = require('lodash/includes')
@@ -146,23 +146,12 @@ const sendMessage = (message) => ({
   message: message
 })
 
-const paymentPrompt = (address, contentRecord) => {
-  var satoshis
-  if (contentRecord.currency === 'satoshi') {
-    satoshis = contentRecord.price
-  } else {
-    satoshis = currency.convertToSatoshi(
-      contentRecord.price,
-      contentRecord.currency
-    )
-  }
-  return {
-    address: address,
-    label: contentRecord.label,
-    satoshis: satoshis,
-    currency: contentRecord.currency
-  }
-}
+const paymentPrompt = (address, contentRecord) => ({
+  address: address,
+  label: contentRecord.label,
+  satoshis: currency.convertToSatoshi(contentRecord.price, contentRecord.currency),
+  currency: contentRecord.currency
+})
 
 module.exports = {
   app: app,

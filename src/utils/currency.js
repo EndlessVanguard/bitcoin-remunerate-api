@@ -3,7 +3,7 @@ const request = require('request')
 // This value is unavailable from outside of this module
 // Therefore convertToSatoshi can't be called with currencyTable as argument
 // This is required for tests to work - when running `npm start` it will refresh
-var currencyTable = require('../test/mockCurrencyTable.js')
+var currencyTable = require('test/mockCurrencyTable.js')
 const refreshCurrencyTable = () => {
   request('https://api.bitcoinaverage.com/ticker/global/all',
           (err, res, body) => {
@@ -23,7 +23,11 @@ function initCurrencyConversionUpdating () {
   return setInterval(refreshCurrencyTable, 1000 * 120)
 }
 
+const isCurrencySatoshi = (currency) => currency === 'satoshi'
+
 function convertToSatoshi (amount, currency) {
+  if (isCurrencySatoshi(currency)) return amount
+
   const bitcoinPrice = currencyTable[currency]['24h_avg']
   const oneCurrInBitcoin = 1 / bitcoinPrice
 
