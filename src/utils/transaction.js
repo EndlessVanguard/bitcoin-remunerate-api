@@ -102,7 +102,7 @@ const payoutContent = (contentId) => (
     .then(buildTransaction)
     .then(trace('transaction: Broadcasting'))
     .then(blockchainApi.broadcastTransaction)
-    .finally(trace('transacton: Message from blockchain.info'))
+    .then(trace('transacton: Message from blockchain.info'))
 )
 
 module.exports = {
