@@ -1,9 +1,17 @@
-const isEqual = require('lodash/fp/isEqual')
 const request = require('request')
 const includes = require('lodash/includes')
 const trim = require('lodash/trim')
 
 const blockchainUrl = 'https://blockchain.info/'
+
+// Sometimes blockchain.info sends errors with status 200
+// This is how we deal with that
+const lookupErrors = [
+  'Checksum does not validate',
+  'Maximum concurrent requests from this IP reached. Please try again shortly.',
+  'Input too short',
+  'Maximum concurrent requests from this IP reached. Please try again shortly.'
+]
 
 const broadcastTransaction = (transactionHex) => (
   new Promise((resolve, reject) => (
@@ -11,22 +19,15 @@ const broadcastTransaction = (transactionHex) => (
       url: blockchainUrl + 'pushtx',
       form: { tx: transactionHex }
     }, (error, res, body) => {
-      if (error) {
-        reject(error)
+      if (error || includes(lookupErrors, body)) {
+        reject(error || body)
       } else {
-        isRateLimited(body) ? reject(body) : resolve(body)
+        resolve(body)
       }
     })
   ))
 )
 
-// Sometimes blockchain.info sends errors with status 200
-// This is how we deal with that
-const lookupErrors = [
-  'Checksum does not validate',
-  'Maximum concurrent requests from this IP reached. Please try again shortly.',
-  'Input too short'
-]
 function getAddress (address) {
   return new Promise((resolve, reject) => {
     request.get({
@@ -42,8 +43,6 @@ function getAddress (address) {
   })
 }
 
-// helpers
-
 // TODO: do we need this method here, or should it be chained in getAddress?
 function isPaid (blockchainHttpResponse) {
   if (includes(lookupErrors, blockchainHttpResponse)) {
@@ -53,10 +52,6 @@ function isPaid (blockchainHttpResponse) {
   const isPaid = blockchainHttpResponse.total_received > price
   return isPaid
 }
-
-const isRateLimited = (body) => (
-  isEqual(body, 'Maximum concurrent requests from this IP reached. Please try again shortly.')
-)
 
 module.exports = {
   broadcastTransaction,
