@@ -10,5 +10,12 @@ module.exports = {
     currency: 'satoshi',
     label: 'Momonas demo video',
     content: '<h3>Nice done!</h3><p>to get this on your website, get in touch with us. <br>Here is the content you paid for: </p><iframe width="345" height="194" src="https://www.youtube-nocookie.com/embed/3ggIHfwkIWM?rel=0&amp;showinfo=0" frameborder="0" allowfullscreen></iframe>'
+  },
+  'currency-test': {
+    payoutAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw',
+    price: 5,
+    currency: 'SEK',
+    label: 'Pengar från norden', // utf-8 power
+    content: 'Sucess! Paying in other currencies work'
   }
 }

@@ -140,6 +140,17 @@ test('validates.errorsInLabel', (t) => {
   t.end()
 })
 
+test('validates.errorsInJavascriptTimestamp', (t) => {
+  const validTimestamp = 1462290285746 // momona epoch ;-)
+
+  t.assert(includes(
+    validates.errorsInJavascriptTimestamp(validTimestamp - 1),
+    'Timestamp too old'
+  ))
+
+  t.end()
+})
+
 test('validates.optional', (t) => {
   const wrappedValidation = validates.optional(() => (['options ∀']))
 

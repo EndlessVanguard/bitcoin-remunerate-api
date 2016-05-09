@@ -8,38 +8,42 @@ const redisDb = require('config/redis')
 const validates = require('utils/validates')
 
 const redisKey = 'invoice'
+const bitcoin = require('bitcoinjs-lib')
+const assoc = require('lodash/fp/assoc')
 
 const Invoice = {
   properties: Object.freeze({
+    createdAt: validates.errorsInJavascriptTimestamp,
     address: validates.errorsInBitcoinAddress,
     contentId: validates.errorsInString,
     privateKey: validates.errorsInPrivateKey,
-    paymentTimestamp: validates.optional(validates.errorsInInteger)
+    paymentTimestamp: validates.optional(validates.errorsInJavascriptTimestamp)
   }),
 
-  // database
   find: (address) => (
     new Promise((resolve, reject) => (
       redisDb.hget(redisKey, address, (error, invoiceData) => (
         error ? reject(error) : resolve(JSON.parse(invoiceData))))
     ))
   ),
+
   findAll: (contentId) => (
     new Promise((resolve, reject) => (
       redisDb.hgetall(redisKey, (error, invoiceMap) => (
         error ? reject(error) : resolve(mapValues(JSON.parse, invoiceMap))))
     )).then(filter((invoice) => invoice.contentId === contentId))
   ),
-  save: (data) => (
-    new Promise((resolve, reject) => {
-      if (Invoice.isValidInvoice(data)) {
-        redisDb.hset(redisKey, data.address, JSON.stringify(data), (error) => (
-          error ? reject(error) : resolve(data)))
+  save: (invoice) => {
+    const redisDb = require('config/redis')
+    return new Promise((resolve, reject) => {
+      if (Invoice.isValidInvoice(invoice)) {
+        redisDb.hset(redisKey, invoice.address, JSON.stringify(invoice), (error) => (
+          error ? reject(error) : resolve(invoice)))
       } else {
-        reject(Invoice.errorsInInvoice(data))
+        reject(Invoice.errorsInInvoice(invoice))
       }
     })
-  ),
+  },
 
   // helpers
   isAddressAndContentPaired: (address, contentId) => (
@@ -56,24 +60,24 @@ const Invoice = {
           invoiceRecord.paymentTimestamp = Date.now()
           return Invoice.save(invoiceRecord)
         }
+        return false
       })
   ),
 
-  // TODO: have a pool of keypairs available
-  newKeypair: (contentId) => {
-    const bitcoin = require('bitcoinjs-lib')
-    // generate a keypair
+  markInvoiceAsPaid: (invoice) => assoc(invoice, 'paymentTimestamp', Date.now()),
+
+  create: (contentId) => {
     const keypair = bitcoin.ECPair.makeRandom()
     const address = keypair.getAddress()
     const privateKey = keypair.toWIF()
+    const createdAt = Date.now()
 
-    Invoice.save({
+    return {
       address,
       contentId,
-      privateKey
-    })
-
-    return address
+      privateKey,
+      createdAt
+    }
   },
 
   // validation

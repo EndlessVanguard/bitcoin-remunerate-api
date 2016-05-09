@@ -1,13 +1,24 @@
-const isNil = require('lodash/isNil')
-
 const apiVersion = require('config/api').apiVersion
+
 const Content = require('records/Content')
 const Invoice = require('records/Invoice')
 const blockchainApi = require('utils/blockchainApi')
+const currency = require('utils/currency.js')
+
 const validates = require('utils/validates')
+const includes = require('lodash/includes')
+const isNil = require('lodash/isNil')
 
 // init express with middleware
 const app = require('express')()
+
+if (includes(process.argv, 'init')) {
+  // Don't run on normal require(), since it is a side-effecty and IO-y function
+  // Damn, I love our code base
+  console.log('Init currency table state synchronization')
+  currency.initCurrencyConversionUpdating()
+}
+
 app.use(require('cors')())
 app.use(require('body-parser').urlencoded())
 app.use(require('body-parser').json())
@@ -27,10 +38,16 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
   const contentId = req.params.contentId
 
   if (isNil(address)) {
-    const newAddress = Invoice.newKeypair(contentId)
-    return Content.find(contentId).then((content) => (
-      res.status(402).json(paymentPrompt(newAddress, content))
-    ))
+    return Content.find(contentId).then((content) => {
+      const invoice = Invoice.create(contentId)
+      Invoice.save(invoice) // TODO have Invoice.save return a Promise
+
+      return res.status(402).json(paymentPrompt(invoice.address, content))
+    })
+    .catch((err) => {
+      console.log(err)
+      res.status(404).send('404 Not Found')
+    })
   }
   if (!validates.isBitcoinAddress(address)) {
     return res.status(400).json({errors: validates.errorsInBitcoinAddress(address)})
@@ -39,22 +56,26 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
   Invoice.isAddressAndContentPaired(address, contentId)
     .then((addressFound) => {
       if (!addressFound) {
-        const newAddress = Invoice.newKeypair(contentId)
-        Content.find(contentId).then((content) => (
-          res.status(402).json(paymentPrompt(newAddress, content))
-        ))
+        Content.find(contentId).then((content) => {
+          const invoice = Invoice.create(contentId)
+          Invoice.save(invoice) // FIXME should return promise
+          return res.status(402).json(paymentPrompt(invoice.address, content))
+        })
       }
 
       return blockchainApi.getAddress(address)
         .then((rawAddressInformation) => {
-          // TODO: lookup content and check price
-          if (blockchainApi.isPaid(rawAddressInformation)) {
-            Invoice.markAsPaid(address)
+          const body = JSON.parse(rawAddressInformation.body)
+          if (blockchainApi.isPaid(body)) {
+            Invoice.find(address).then((invoice) => {
+              Invoice.save(Invoice.markInvoiceAsPaid(invoice))
+            })
 
-            Content.find(contentId).then((content) => {
+            Content.find(contentId).then((content) => (
               res.status(200).send(content.content)
-            }).catch((error) => {
+            )).catch((error) => {
               console.log(error)
+
               return res.status(500).send()
             })
           } else {
@@ -129,7 +150,7 @@ app.post(`/${apiVersion}/content`, (req, res) => {
 
 const port = 3000
 const server = app.listen(port, function () {
-  console.log('server on', port, '😎')
+  console.log(`server on ${port} 😎 Time is ${new Date()}`)
 })
 
 // helper for response formats
@@ -137,17 +158,12 @@ const sendMessage = (message) => ({
   message: message
 })
 
-const paymentPrompt = (address, contentRecord) => {
-  const label = contentRecord.label
-
-  if (contentRecord.currency === 'satoshi') {
-    const satoshis = contentRecord.price
-
-    return { address, label, satoshis }
-  } else {
-    throw Error('Bad currency, and I have yet to learn how to convert')
-  }
-}
+const paymentPrompt = (address, contentRecord) => ({
+  address: address,
+  label: contentRecord.label,
+  satoshis: currency.convertToSatoshi(contentRecord.price, contentRecord.currency),
+  currency: contentRecord.currency
+})
 
 module.exports = {
   app: app,
