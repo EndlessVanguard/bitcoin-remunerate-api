@@ -1,6 +1,6 @@
 const request = require('request')
-const includes = require('lodash/includes')
-const trim = require('lodash/trim')
+const includes = require('lodash/fp/includes')
+const trim = require('lodash/fp/trim')
 
 const blockchainUrl = 'https://blockchain.info/'
 

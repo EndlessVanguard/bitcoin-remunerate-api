@@ -38,6 +38,7 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
   const contentId = req.params.contentId
 
   if (isNil(address)) {
+    // TODO: Content.find should be first, all paths need this.
     return Content.find(contentId).then((content) => {
       const invoice = Invoice.create(contentId)
       Invoice.save(invoice) // TODO have Invoice.save return a Promise

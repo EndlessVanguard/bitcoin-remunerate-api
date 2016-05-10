@@ -1,9 +1,9 @@
-const isEmpty = require('lodash/isEmpty')
-const isInteger = require('lodash/isInteger')
-const isNumber = require('lodash/isNumber')
-const isString = require('lodash/isString')
-const isUndefined = require('lodash/isUndefined')
-const size = require('lodash/size')
+const isEmpty = require('lodash/fp/isEmpty')
+const isInteger = require('lodash/fp/isInteger')
+const isNumber = require('lodash/fp/isNumber')
+const isString = require('lodash/fp/isString')
+const isUndefined = require('lodash/fp/isUndefined')
+const size = require('lodash/fp/size')
 
 const errorsInBitcoinAddress = (address) => {
   var err = []

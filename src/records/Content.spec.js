@@ -3,7 +3,7 @@ const Content = require('./Content')
 
 const assoc = require('lodash/fp/assoc')
 const dissoc = require('lodash/fp/dissoc')
-const isEqual = require('lodash/isEqual')
+const isEqual = require('lodash/fp/isEqual')
 
 const validContent = {
   contentId: 'my-cool-content',
