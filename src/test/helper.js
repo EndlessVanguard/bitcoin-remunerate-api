@@ -14,7 +14,6 @@ const spyOn = (Record, fn, cb) => {
 const helper = {
   spyOn,
   validAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw',
-  // TODO: correct name?
   validWIF: '5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ'
 }
 

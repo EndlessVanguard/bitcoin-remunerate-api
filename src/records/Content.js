@@ -1,10 +1,13 @@
 const isValid = require('utils/isValid')
 const redisDb = require('config/redis')
-const validates = require('utils/validates.js')
+const validates = require('utils/validates')
 
 const redisKey = 'content'
 
 const Content = {
+
+  // validation
+
   properties: Object.freeze({
     contentId: validates.errorsInContentId,
     content: validates.errorsInString,
@@ -13,6 +16,12 @@ const Content = {
     label: validates.errorsInLabel,
     payoutAddress: validates.errorsInBitcoinAddress
   }),
+
+  errorsInContent: (contentData) => isValid.errorsInRecord(contentData, Content.properties),
+
+  isValidContent: (contentData) => isValid.isValidRecord(contentData, Content.properties),
+
+  // database
 
   find: (contentId) => (
     new Promise((resolve, reject) => (
@@ -25,6 +34,7 @@ const Content = {
       })
     ))
   ),
+
   save: (data) => (
     new Promise((resolve, reject) => {
       if (Content.isValidContent(data)) {
@@ -34,10 +44,8 @@ const Content = {
         reject(Content.errorsInContent(data))
       }
     })
-  ),
+  )
 
-  errorsInContent: (contentData) => isValid.errorsInRecord(contentData, Content.properties),
-  isValidContent: (contentData) => isValid.isValidRecord(contentData, Content.properties)
 }
 
 module.exports = Content

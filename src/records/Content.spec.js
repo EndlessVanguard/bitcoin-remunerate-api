@@ -20,10 +20,10 @@ test('isValidContent', (t) => {
     'Valid Content record is valid')
   t.assert(
     !Content.isValidContent(dissoc('contentId', validContent)),
-    'Content is missing contentId is invalid')
+    'Content missing contentId is invalid')
   t.assert(
     !Content.isValidContent(dissoc('content', validContent)),
-    'Content is missing content is invalid')
+    'Content missing content is invalid')
   t.assert(
     !Content.isValidContent(assoc('price', '10000', validContent)),
     'Content price can not be string')
