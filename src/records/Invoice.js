@@ -1,24 +1,33 @@
-const isNil = require('lodash/isNil')
+const bitcoin = require('bitcoinjs-lib')
 const filter = require('lodash/fp/filter')
-const mapValues = require('lodash/fp/mapValues')
 const get = require('lodash/fp/get')
+const isNil = require('lodash/fp/isNil')
+const mapValues = require('lodash/fp/mapValues')
+const assoc = require('lodash/fp/assoc')
 
 const isValid = require('utils/isValid')
 const redisDb = require('config/redis')
 const validates = require('utils/validates')
 
 const redisKey = 'invoice'
-const bitcoin = require('bitcoinjs-lib')
-const assoc = require('lodash/fp/assoc')
 
 const Invoice = {
+
+  // validation
+
   properties: Object.freeze({
     createdAt: validates.errorsInJavascriptTimestamp,
     address: validates.errorsInBitcoinAddress,
-    contentId: validates.errorsInString,
-    privateKey: validates.errorsInPrivateKey,
+    contentId: validates.errorsInContentId,
+    privateKey: validates.errorsInBitcoinPrivateKey,
     paymentTimestamp: validates.optional(validates.errorsInJavascriptTimestamp)
   }),
+
+  errorsInInvoice: (invoiceData) => isValid.errorsInRecord(invoiceData, Invoice.properties),
+
+  isValidInvoice: (invoiceData) => isValid.isValidRecord(invoiceData, Invoice.properties),
+
+  // database
 
   find: (address) => (
     new Promise((resolve, reject) => (
@@ -33,9 +42,9 @@ const Invoice = {
         error ? reject(error) : resolve(mapValues(JSON.parse, invoiceMap))))
     )).then(filter((invoice) => invoice.contentId === contentId))
   ),
-  save: (invoice) => {
-    const redisDb = require('config/redis')
-    return new Promise((resolve, reject) => {
+
+  save: (invoice) => (
+    new Promise((resolve, reject) => {
       if (Invoice.isValidInvoice(invoice)) {
         redisDb.hset(redisKey, invoice.address, JSON.stringify(invoice), (error) => (
           error ? reject(error) : resolve(invoice)))
@@ -43,9 +52,22 @@ const Invoice = {
         reject(Invoice.errorsInInvoice(invoice))
       }
     })
-  },
+  ),
 
   // helpers
+
+  create: (contentId) => {
+    // TODO: this should be coming from a pool of prepared keys
+    const keypair = bitcoin.ECPair.makeRandom()
+
+    return {
+      contentId,
+      address: keypair.getAddress(),
+      privateKey: keypair.toWIF(),
+      createdAt: Date.now()
+    }
+  },
+
   isAddressAndContentPaired: (address, contentId) => (
     Invoice.find(address)
       .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))
@@ -53,36 +75,8 @@ const Invoice = {
 
   isPaid: (invoice) => validates.isInteger(get('paymentTimestamp', invoice)),
 
-  markAsPaid: (address) => (
-    Invoice.find(address)
-      .then((invoiceRecord) => {
-        if (!invoiceRecord.paymentTimestamp) {
-          invoiceRecord.paymentTimestamp = Date.now()
-          return Invoice.save(invoiceRecord)
-        }
-        return false
-      })
-  ),
+  markInvoiceAsPaid: assoc('paymentTimestamp', Date.now())
 
-  markInvoiceAsPaid: (invoice) => assoc(invoice, 'paymentTimestamp', Date.now()),
-
-  create: (contentId) => {
-    const keypair = bitcoin.ECPair.makeRandom()
-    const address = keypair.getAddress()
-    const privateKey = keypair.toWIF()
-    const createdAt = Date.now()
-
-    return {
-      address,
-      contentId,
-      privateKey,
-      createdAt
-    }
-  },
-
-  // validation
-  errorsInInvoice: (invoiceData) => isValid.errorsInRecord(invoiceData, Invoice.properties),
-  isValidInvoice: (invoiceData) => isValid.isValidRecord(invoiceData, Invoice.properties)
 }
 
 module.exports = Invoice

@@ -1,16 +1,8 @@
 const test = require('tape')
 const Invoice = require('./Invoice')
 
-const isEqual = require('lodash/isEqual')
+const isEqual = require('lodash/fp/isEqual')
 const dissoc = require('lodash/fp/dissoc')
-
-test('creating new invoices', (t) => {
-  // ☯λ☯λ☯λ \\
-  t.assert(Invoice.isValidInvoice(
-    Invoice.create('momona-demo-video')
-  ), 'Invoice.create creates valid invoices')
-  t.end()
-})
 
 const validInvoice = {
   createdAt: 1462290285746,
@@ -19,7 +11,14 @@ const validInvoice = {
   privateKey: 'L1dHE6RmNw345p2wy5m6dzyULAzqM96HdeHrfAKgU5sLYrNYpup9'
 }
 
-test('errorsInInvoice', (t) => {
+test('Invoice.create', (t) => {
+  // ☯λ☯λ☯λ \\
+  t.assert(Invoice.isValidInvoice(Invoice.create('momona-demo-video')),
+          'Invoice.create creates valid invoices')
+  t.end()
+})
+
+test('Invoice.errorsInInvoice', (t) => {
   t.assert(isEqual(Invoice.errorsInInvoice(validInvoice), []),
            'Valid Invoice contains no errors')
 
@@ -31,10 +30,16 @@ test('errorsInInvoice', (t) => {
   t.end()
 })
 
-test('isPaid', (t) => {
+test('Invoice.isPaid', (t) => {
   t.assert(Invoice.isPaid({ paymentTimestamp: Date.now() }),
            'when there is a paymentTimestamp, Invoice has been paid')
   t.assert(!Invoice.isPaid({}),
            'when there is no paymentTimestamp, Invoice has not been paid')
+  t.end()
+})
+
+test('Invoice.markInvoiceAsPaid', (t) => {
+  t.assert(Invoice.markInvoiceAsPaid(validInvoice).paymentTimestamp !== undefined,
+          'will set the paymentTimestamp')
   t.end()
 })
