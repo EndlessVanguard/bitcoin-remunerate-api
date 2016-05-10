@@ -8,7 +8,6 @@ const blockchainUrl = 'https://blockchain.info/'
 // This is how we deal with that
 const lookupErrors = [
   'Checksum does not validate',
-  'Maximum concurrent requests from this IP reached. Please try again shortly.',
   'Input too short',
   'Maximum concurrent requests from this IP reached. Please try again shortly.'
 ]
@@ -19,10 +18,10 @@ const broadcastTransaction = (transactionHex) => (
       url: blockchainUrl + 'pushtx',
       form: { tx: transactionHex }
     }, (error, res, body) => {
-      if (error || includes(lookupErrors, body)) {
+      if (error || includes(lookupErrors, trim(body))) {
         reject(error || body)
       } else {
-        resolve(body)
+        resolve(JSON.parse(body))
       }
     })
   ))
@@ -34,10 +33,9 @@ function getAddress (address) {
       url: blockchainUrl + `rawaddr/${address}`
     }, (error, response, body) => {
       if (error || includes(lookupErrors, trim(body))) {
-        return reject(error || body)
+        reject(error || body)
       } else {
-        // FIXME should give back response.body
-        return resolve(response)
+        resolve(JSON.parse(body))
       }
     })
   })

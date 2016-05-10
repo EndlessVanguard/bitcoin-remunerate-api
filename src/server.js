@@ -65,8 +65,7 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
 
       return blockchainApi.getAddress(address)
         .then((rawAddressInformation) => {
-          const body = JSON.parse(rawAddressInformation.body)
-          if (blockchainApi.isPaid(body)) {
+          if (blockchainApi.isPaid(rawAddressInformation)) {
             Invoice.find(address).then((invoice) => {
               Invoice.save(Invoice.markInvoiceAsPaid(invoice))
             })
