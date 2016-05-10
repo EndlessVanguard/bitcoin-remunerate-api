@@ -2,7 +2,7 @@ const test = require('tape')
 const isValid = require('./isValid')
 
 const dissoc = require('lodash/fp/dissoc')
-const isEqual = require('lodash/isEqual')
+const isEqual = require('lodash/fp/isEqual')
 
 const validates = require('utils/validates.js')
 

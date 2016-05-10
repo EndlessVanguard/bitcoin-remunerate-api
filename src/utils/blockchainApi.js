@@ -1,6 +1,6 @@
+const includes = require('lodash/fp/includes')
 const request = require('request')
-const includes = require('lodash/includes')
-const trim = require('lodash/trim')
+const trim = require('lodash/fp/trim')
 
 const blockchainUrl = 'https://blockchain.info/'
 
@@ -18,7 +18,7 @@ const broadcastTransaction = (transactionHex) => (
       url: blockchainUrl + 'pushtx',
       form: { tx: transactionHex }
     }, (error, res, body) => {
-      if (error || includes(lookupErrors, trim(body))) {
+      if (error || includes(trim(body), lookupErrors)) {
         reject(error || body)
       } else {
         resolve(JSON.parse(body))
@@ -32,7 +32,7 @@ function getAddress (address) {
     request.get({
       url: blockchainUrl + `rawaddr/${address}`
     }, (error, response, body) => {
-      if (error || includes(lookupErrors, trim(body))) {
+      if (error || includes(trim(body), lookupErrors)) {
         reject(error || body)
       } else {
         resolve(JSON.parse(body))
@@ -43,7 +43,7 @@ function getAddress (address) {
 
 // TODO: do we need this method here, or should it be chained in getAddress?
 function isPaid (blockchainHttpResponse) {
-  if (includes(lookupErrors, blockchainHttpResponse)) {
+  if (includes(blockchainHttpResponse, lookupErrors)) {
     return false
   }
   const price = 1

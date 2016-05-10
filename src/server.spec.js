@@ -2,9 +2,11 @@ const test = require('tape')
 const api = require('./server')
 
 const request = require('supertest')
+const isEqual = require('lodash/fp/isEqual')
 
 const apiVersion = require('config/api').apiVersion
 const helper = require('test/helper')
+const validates = require('utils/validates')
 
 const apiUrl = (path) => {
   if (!path) path = ''
@@ -35,8 +37,6 @@ test('route GET /0/content/:contentId', (t) => {
       .expect('Content-Type', /json/)
       .expect(400)
       .end((error, res) => {
-        const validates = require('utils/validates')
-        const isEqual = require('lodash/isEqual')
         if (error) { return st.end(error) }
 
         st.assert(isEqual(validates.errorsInBitcoinAddress(badAddress),
