@@ -1,4 +1,5 @@
 const isEmpty = require('lodash/isEmpty')
+const isInteger = require('lodash/isInteger')
 const isNumber = require('lodash/isNumber')
 const isString = require('lodash/isString')
 const isUndefined = require('lodash/isUndefined')
@@ -6,7 +7,7 @@ const size = require('lodash/size')
 
 const errorsInBitcoinAddress = (address) => {
   var err = []
-  if (!/^[13]/.test(address)) { err.push('Bitcoin Address must begin with a "1" or "3"') }
+  if (!/^[13]/.test(address)) { err.push('Bitcoin Address must begin with one of: "1", "3"') }
   if (!isString(address)) {
     err.push('Bitcoin Address must be a String')
   } else {
@@ -16,12 +17,20 @@ const errorsInBitcoinAddress = (address) => {
   return err
 }
 
-const errorsInPrivateKey = (privateKey) => {
+const errorsInBitcoinPrivateKey = (privateKey) => {
   var err = []
-  if (!isString(privateKey)) { err.push('must be a String') }
-  if (!(/^[5KL]/).test(privateKey)) { err.push('must begin with one of: 5, K, L]') }
-  if (size(privateKey) < 51) { err.push('Private Key WIF must be at least 51 characters long') }
-  if (size(privateKey) > 52) { err.push('Private Key WIF can not be longer than 52 characters') }
+  if (!isString(privateKey)) { err.push('Bitcoin Private Key WIF must be a String') }
+  if (!(/^[5KL]/).test(privateKey)) { err.push('must begin with one of: "5", "K", "L"') }
+  if (size(privateKey) < 51) { err.push('Bitcoin Private Key WIF must be at least 51 characters long') }
+  if (size(privateKey) > 52) { err.push('Bitcoin Private Key WIF can not be longer than 52 characters') }
+  return err
+}
+
+const errorsInContentId = (contentId) => {
+  var err = []
+  if (isNumber(contentId)) { err.push('contentId must be String, is Number') }
+  if (!isString(contentId)) { err.push('contentId must be String') }
+  if (/ /.test(contentId)) { err.push('contentId can not contain spaces') }
   return err
 }
 
@@ -31,7 +40,6 @@ const errorsInCurrency = (currency) => {
   return err
 }
 
-const isInteger = require('lodash/isInteger')
 const errorsInInteger = (int) => isInteger(int) ? [] : ['must be a Integer']
 
 const errorsInLabel = (label) => {
@@ -51,13 +59,13 @@ const errorsInJavascriptTimestamp = (timestamp) => {
 const optional = (fn) => (value) => (isUndefined(value) ? [] : fn(value))
 
 module.exports = {
-  optional: optional,
-
   errorsInBitcoinAddress: errorsInBitcoinAddress,
   isBitcoinAddress: (address) => isEmpty(errorsInBitcoinAddress(address)),
 
-  errorsInPrivateKey: errorsInPrivateKey,
-  isBitcoinPrivateKey: (privateKey) => isEmpty(errorsInPrivateKey(privateKey)),
+  errorsInBitcoinPrivateKey: errorsInBitcoinPrivateKey,
+  isBitcoinPrivateKey: (privateKey) => isEmpty(errorsInBitcoinPrivateKey(privateKey)),
+
+  errorsInContentId: errorsInContentId,
 
   errorsInCurrency: errorsInCurrency,
   isCurrency: (currency) => isEmpty(errorsInCurrency(currency)),
@@ -65,19 +73,13 @@ module.exports = {
   errorsInInteger: errorsInInteger,
   isInteger: isInteger,
 
+  errorsInJavascriptTimestamp: errorsInJavascriptTimestamp,
+
+  errorsInLabel: errorsInLabel,
+  isLabel: (label) => isEmpty(errorsInLabel(label)),
+
   errorsInString: (str) => (isString(str) ? [] : ['must be a String']),
   isString: isString,
 
-  errorsInContentId: (contentId) => {
-    var err = []
-    if (isNumber(contentId)) { err.push('contentId must be String, is Number') }
-    if (!isString(contentId)) { err.push('contentId must be string') }
-    if (/ /.test(contentId)) { err.push('contentId can not contain spaces') }
-    return err
-  },
-  errorsInLabel: errorsInLabel,
-
-  isLabel: (label) => (errorsInLabel(label).length === 0),
-
-  errorsInJavascriptTimestamp: errorsInJavascriptTimestamp
+  optional: optional
 }

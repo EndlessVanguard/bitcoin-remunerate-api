@@ -53,7 +53,7 @@ test('errorsInRecord', (t) => {
         mockProperties
       ),
       ['Currency must be "satoshi"',
-       'Bitcoin Address must begin with a "1" or "3"',
+       'Bitcoin Address must begin with one of: "1", "3"',
        'Bitcoin Address must be a String']
     ),
     'Removing many required fields yields multiple errors'
