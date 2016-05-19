@@ -1,5 +1,5 @@
 const request = require('request')
-const includes = require('lodash/fp/includes')
+const includes = require('lodash/includes')
 const trim = require('lodash/fp/trim')
 
 const blockchainUrl = 'https://blockchain.info/'
@@ -9,7 +9,8 @@ const blockchainUrl = 'https://blockchain.info/'
 const lookupErrors = [
   'Checksum does not validate',
   'Input too short',
-  'Maximum concurrent requests from this IP reached. Please try again shortly.'
+  'Maximum concurrent requests from this IP reached. Please try again shortly.',
+  'All Outputs Are Very Small you must include a min (10000) satoshi fee'
 ]
 
 const broadcastTransaction = (transactionHex) => (
