@@ -1,14 +1,17 @@
 const test = require('tape')
-const request = require('supertest')
+const api = require('./server')
 
-const apiVersion = 0
+const request = require('supertest')
+const isEqual = require('lodash/fp/isEqual')
+
+const apiVersion = require('config/api').apiVersion
+const helper = require('test/helper')
+const validates = require('utils/validates')
 
 const apiUrl = (path) => {
   if (!path) path = ''
   return `/${apiVersion}/content/${path}`
 }
-
-const api = require('./server')
 
 test('route GET /0/content/:contentId', (t) => {
   // TODO: this test is hanging..
@@ -34,8 +37,6 @@ test('route GET /0/content/:contentId', (t) => {
       .expect('Content-Type', /json/)
       .expect(400)
       .end((error, res) => {
-        const validates = require('utils/validates')
-        const isEqual = require('lodash/isEqual')
         if (error) { return st.end(error) }
 
         st.assert(isEqual(validates.errorsInBitcoinAddress(badAddress),
@@ -49,10 +50,10 @@ test('route POST /0/content', (t) => {
   const mockData = () => ({
     contentId: 'mein-artikle',
     content: 'eins zwei dri',
-    payoutAddress: require('test/helper').validAddress
+    payoutAddress: helper.validAddress
   })
 
-  const spyOnContentSave = () => require('test/helper').spyOn(
+  const spyOnContentSave = () => helper.spyOn(
     require('records/Content'),
     'save',
     (data) => Promise.resolve(data)
