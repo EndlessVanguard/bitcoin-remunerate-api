@@ -1,10 +1,14 @@
+const assoc = require('lodash/fp/assoc')
+const bitcoin = require('bitcoinjs-lib')
+const filter = require('lodash/fp/filter')
+const isNil = require('lodash/isNil')
+const mapValues = require('lodash/fp/mapValues')
+const get = require('lodash/fp/get')
+
+const isValid = require('utils/isValid')
 const validates = require('utils/validates')
 
 const redisKey = 'invoice'
-const isValid = require('utils/isValid')
-const bitcoin = require('bitcoinjs-lib')
-const assoc = require('lodash/fp/assoc')
-const isNil = require('lodash/isNil')
 
 const Invoice = {
   properties: Object.freeze({
@@ -24,31 +28,36 @@ const Invoice = {
       })
     })
   },
-  findAll: () => {
+  findAll: (contentId) => {
     const redisDb = require('config/redis')
     return new Promise((resolve, reject) => {
-      redisDb.hkeys(redisKey, (error, addressList) => {
+      redisDb.hgetall(redisKey, (error, invoiceMap) => {
         if (error) reject(error)
-        resolve(addressList)
+        resolve(mapValues(JSON.parse, invoiceMap))
       })
     })
+      .then(filter((invoice) => invoice.contentId === contentId))
   },
   // MUTATING
   save: (invoice) => {
-    // TODO this should return a promise, so we can check for errors
     const redisDb = require('config/redis')
-    if (Invoice.isValidInvoice(invoice)) {
-      redisDb.hset(redisKey, invoice.address, JSON.stringify(invoice))
-      return true
-    }
-    return false
+    return new Promise((resolve, reject) => {
+      if (Invoice.isValidInvoice(invoice)) {
+        redisDb.hset(redisKey, invoice.address, JSON.stringify(invoice), (error) => {
+          error ? reject(error) : resolve(invoice)
+        })
+      }
+    })
   },
 
   isAddressAndContentPaired: (address, contentId) => (
     Invoice.find(address)
-           .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))),
+      .then((invoice) => !isNil(invoice) && (invoice.contentId === contentId))),
 
   markInvoiceAsPaid: (invoice) => assoc(invoice, 'paymentTimestamp', Date.now()),
+
+  // FIXME I think this function is never used, except for in the test
+  isPaid: (invoice) => validates.isInteger(get('paymentTimestamp', invoice)),
 
   create: (contentId) => {
     const keypair = bitcoin.ECPair.makeRandom()

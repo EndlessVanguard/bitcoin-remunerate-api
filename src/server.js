@@ -1,14 +1,14 @@
-const apiVersion = 0
-
-const Content = require('records/Content')
-const Invoice = require('records/Invoice')
-const blockchainApi = require('utils/blockchainApi')
-const currency = require('utils/currency.js')
-
-const validates = require('utils/validates')
 const includes = require('lodash/includes')
 const isNil = require('lodash/isNil')
 
+const Content = require('records/Content')
+const Invoice = require('records/Invoice')
+const apiVersion = require('config/api').apiVersion
+const blockchainApi = require('utils/blockchainApi')
+const currency = require('utils/currency.js')
+const validates = require('utils/validates')
+
+// init express with middleware
 const app = require('express')()
 
 if (includes(process.argv, 'init')) {
@@ -21,6 +21,7 @@ if (includes(process.argv, 'init')) {
 app.use(require('cors')())
 app.use(require('body-parser').urlencoded())
 app.use(require('body-parser').json())
+
 // index
 app.get('/', (req, res) => (
   res.status(200).send(`Welcome to Momona! Do GET /${apiVersion}/content/:contentId`)
@@ -36,50 +37,55 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
   const contentId = req.params.contentId
 
   if (isNil(address)) {
-    return Content.find(contentId).then((content) => {
-      const invoice = Invoice.create(contentId)
-      Invoice.save(invoice) // TODO have Invoice.save return a Promise
+    return Content.find(contentId)
+      .then((content) => {
+        const invoice = Invoice.create(contentId)
+        Invoice.save(invoice) // TODO have Invoice.save return a Promise
 
-      return res.status(402).json(paymentPrompt(invoice.address, content))
-    })
-    .catch((err) => {
-      console.log(err)
-      res.status(404).send('404 Not Found')
-    })
-  }
-  if (!validates.isBitcoinAddress(address)) {
+        return res.status(402).json(paymentPrompt(invoice.address, content))
+      })
+      .catch((err) => {
+        console.log(err)
+        res.status(404).send('404 Not Found')
+      })
+  } else if (!validates.isBitcoinAddress(address)) {
     return res.status(400).json({errors: validates.errorsInBitcoinAddress(address)})
   }
 
   Invoice.isAddressAndContentPaired(address, contentId)
     .then((addressFound) => {
       if (!addressFound) {
-        Content.find(contentId).then((content) => {
-          const invoice = Invoice.create(contentId)
-          Invoice.save(invoice) // FIXME should return promise
-          return res.status(402).json(paymentPrompt(invoice.address, content))
-        })
+        Content.find(contentId)
+          .then((content) => {
+            const invoice = Invoice.create(contentId)
+            Invoice.save(invoice) // FIXME should return promise
+            return res.status(402).json(paymentPrompt(invoice.address, content))
+          })
       }
 
       return blockchainApi.lookup(address)
-        .then((rawAddressInformation) => {
-          const body = JSON.parse(rawAddressInformation.body)
+        .then((body) => {
           if (blockchainApi.isPaid(body)) {
-            Invoice.find(address).then((invoice) => {
-              Invoice.save(Invoice.markInvoiceAsPaid(invoice))
-            })
+            Invoice.find(address)
+              .then((invoice) => {
+                Invoice.save(
+                  Invoice.markInvoiceAsPaid(invoice)
+                )
+              })
+            return Content.find(contentId)
+              .then((content) => (
+                res.status(200).send(content.content)
+              ))
+              .catch((error) => {
+                console.log(error)
 
-            Content.find(contentId).then((content) => (
-              res.status(200).send(content.content)
-            )).catch((error) => {
-              console.log(error)
-
-              return res.status(500).send()
-            })
+                return res.status(500).send()
+              })
           } else {
-            Content.find(contentId).then((content) => (
-              res.status(402).json(paymentPrompt(address, content))
-            ))
+            return Content.find(contentId)
+              .then((content) => (
+                res.status(402).json(paymentPrompt(address, content))
+              ))
           }
         })
         .catch((error) => {
@@ -135,7 +141,7 @@ app.post(`/${apiVersion}/content`, (req, res) => {
     )
   }
 
-  req.body.price = parseInt(req.body.price)
+  req.body.price = parseInt(req.body.price, 10)
 
   return Content.save(req.body)
     .then((contentRecord) => {

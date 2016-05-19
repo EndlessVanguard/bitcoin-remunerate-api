@@ -1,5 +1,6 @@
 const test = require('tape')
 const Invoice = require('./Invoice')
+
 const isEqual = require('lodash/isEqual')
 const dissoc = require('lodash/fp/dissoc')
 
@@ -27,5 +28,13 @@ test('errorsInInvoice', (t) => {
   t.assert(!Invoice.isValidInvoice(dissoc(validInvoice, 'createdAt')),
            'Invoice without createdAt timestamp is invalid')
 
+  t.end()
+})
+
+test('isPaid', (t) => {
+  t.assert(Invoice.isPaid({ paymentTimestamp: Date.now() }),
+           'when there is a paymentTimestamp, Invoice has been paid')
+  t.assert(!Invoice.isPaid({}),
+           'when there is no paymentTimestamp, Invoice has not been paid')
   t.end()
 })
