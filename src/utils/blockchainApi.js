@@ -21,7 +21,8 @@ const broadcastTransaction = (transactionHex) => (
       if (error || includes(trim(body), lookupErrors)) {
         reject(error || body)
       } else {
-        resolve(JSON.parse(body))
+        // This API does not return JSON
+        resolve(body)
       }
     })
   ))
