@@ -1,6 +1,6 @@
-const isValid = require('utils/isValid')
-const redisDb = require('config/redis')
-const validates = require('utils/validates')
+const isValid = require('../utils/isValid')
+const redisDb = require('../config/redis')
+const validates = require('../utils/validates')
 
 const redisKey = 'content'
 
@@ -22,7 +22,6 @@ const Content = {
   isValidContent: (contentData) => isValid.isValidRecord(contentData, Content.properties),
 
   // database
-
   find: (contentId) => (
     new Promise((resolve, reject) => (
       redisDb.hget(redisKey, contentId, (error, contentData) => {

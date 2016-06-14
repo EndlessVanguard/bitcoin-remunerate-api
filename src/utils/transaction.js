@@ -8,11 +8,11 @@ const isEqual = require('lodash/fp/isEqual')
 const merge = require('lodash/fp/merge')
 const set = require('lodash/fp/set')
 
-const blockchainApi = require('utils/blockchainApi')
-const Content = require('records/Content')
-const Invoice = require('records/Invoice')
-const trace = require('utils/trace')
-const validates = require('utils/validates')
+const blockchainApi = require('../utils/blockchainApi')
+const Content = require('../records/Content')
+const Invoice = require('../records/Invoice')
+const trace = require('../utils/trace')
+const validates = require('../utils/validates')
 
 // TODO: we should calculate a new keypair, track it, and respond
 const serviceAddress = () => '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
@@ -27,11 +27,11 @@ const calculateFee = (total) => ({
 })
 
 const buildTransaction = (transactionInfo) => {
-  const UXTO = transactionInfo.UXTO
+  const UTXO = transactionInfo.UTXO
   const payoutAddress = transactionInfo.payoutAddress
   const serviceAddress = transactionInfo.serviceAddress
 
-  console.assert(UXTO.length > 0, 'UXTO is empty')
+  console.assert(UTXO.length > 0, 'UTXO is empty')
   console.assert(validates.isBitcoinAddress(payoutAddress),
                  'payoutAddress must be valid Bitcoin Address', payoutAddress)
   console.assert(validates.isBitcoinAddress(serviceAddress),
@@ -39,9 +39,9 @@ const buildTransaction = (transactionInfo) => {
 
   const tx = new bitcoin.TransactionBuilder()
 
-  UXTO.forEach((output) => tx.addInput(output.hash, output.n))
+  UTXO.forEach((output) => tx.addInput(output.hash, output.n))
 
-  const totalPayout = UXTO.reduce((sum, x) => sum + x['value'], 0)
+  const totalPayout = UTXO.reduce((sum, x) => sum + x['value'], 0)
   console.assert(totalPayout > minimumPayoutBalance,
                  `totalPayout ${totalPayout} is less than the minimumPayoutBalance ${minimumPayoutBalance}`)
   const amount = calculateFee(totalPayout)
@@ -56,7 +56,7 @@ const buildTransaction = (transactionInfo) => {
     tx.addOutput(serviceAddress, amount.service)
   }
 
-  UXTO.forEach((input, index) => {
+  UTXO.forEach((input, index) => {
     const keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
     tx.sign(index, keyPair)
   })
@@ -66,14 +66,14 @@ const buildTransaction = (transactionInfo) => {
 
 // returns all unspent transaction outputs
 // annotated with the transaction hash and the Content privateKey
-const getUXTO = flatMap((invoice) => (
+const getUTXO = flatMap((invoice) => (
   flatMap((tx) => (
     flatMap(
       compose(set('hash', tx.hash), set('privateKey', invoice.privateKey)),
       filter(
         (out) => (!out.spent && isEqual(out.addr, invoice.address)),
         tx.out))),
-    invoice.txs)
+          invoice.txs)
 ))
 
 // add finalBalance, lastTransaction to every input
@@ -81,9 +81,9 @@ const getUXTO = flatMap((invoice) => (
 const addBlockchainInformationToInvoices = (invoiceList) => (
   new Promise((resolve, reject) => (
     async.mapLimit(invoiceList, 5,
-      async.asyncify(compose(blockchainApi.getAddress, get('address'))),
-      (err, txInfo) => err ? reject(txInfo) : resolve(txInfo)
-    )
+                   async.asyncify(compose(blockchainApi.getAddress, get('address'))),
+                   (err, txInfo) => err ? reject(txInfo) : resolve(txInfo)
+                  )
   )).then(merge(invoiceList))
 )
 
@@ -94,7 +94,7 @@ const payoutContent = (contentId) => (
     .then(filter((invoice) => invoice.final_balance > 0))
     .then((invoiceList) => (
       Content.find(contentId).then((content) => ({
-        UXTO: getUXTO(invoiceList),
+        UTXO: getUTXO(invoiceList),
         payoutAddress: content.payoutAddress,
         serviceAddress: serviceAddress()
       }))
@@ -109,6 +109,6 @@ module.exports = {
   addBlockchainInformationToInvoices,
   buildTransaction,
   calculateFee,
-  getUXTO,
+  getUTXO,
   payoutContent
 }

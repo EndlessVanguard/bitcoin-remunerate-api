@@ -5,9 +5,9 @@ const isNil = require('lodash/fp/isNil')
 const mapValues = require('lodash/fp/mapValues')
 const assoc = require('lodash/fp/assoc')
 
-const isValid = require('utils/isValid')
-const redisDb = require('config/redis')
-const validates = require('utils/validates')
+const isValid = require('../utils/isValid')
+const redisDb = require('../config/redis')
+const validates = require('../utils/validates')
 
 const redisKey = 'invoice'
 

@@ -7,7 +7,7 @@ const helper = require('test/helper')
 
 test('transaction.buildTransaction', (t) => {
   const mockTransactionInfo = {
-    UXTO: [
+    UTXO: [
       {
         addr: helper.validAddress,
         hash: '6d265ee112592132af41439181ce53f5114d99d144fb390f666f5e59e8f59dbd',
@@ -66,7 +66,7 @@ test('transaction.calculateFee', (t) => {
   t.end()
 })
 
-test('transaction.getUXTO', (t) => {
+test('transaction.getUTXO', (t) => {
   // https://blockchain.info/rawaddr/19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw
   const mockInvoiceList = [
     {
@@ -136,7 +136,7 @@ test('transaction.getUXTO', (t) => {
     }
   ]
 
-  const actual = transaction.getUXTO(mockInvoiceList)
+  const actual = transaction.getUTXO(mockInvoiceList)
   const expected = [
     {
       addr: helper.validAddress,
@@ -172,6 +172,6 @@ test('transaction.getUXTO', (t) => {
     }
   ]
   t.assert(isEqual(actual, expected),
-          'UXTO filtered by address & spent then annotated with transaction hash and privateKey')
+          'UTXO filtered by address & spent then annotated with transaction hash and privateKey')
   t.end()
 })
