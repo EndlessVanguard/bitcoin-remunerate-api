@@ -1,185 +1,114 @@
-const isString = require('lodash/isString')
-const isArray = require('lodash/isArray')
-const isObject = require('lodash/isObject')
+const async = require('async')
+const bitcoin = require('bitcoinjs-lib')
+const compose = require('lodash/fp/compose')
+const filter = require('lodash/fp/filter')
+const flatMap = require('lodash/fp/flatMap')
+const get = require('lodash/fp/get')
+const isEqual = require('lodash/fp/isEqual')
+const merge = require('lodash/fp/merge')
+const set = require('lodash/fp/set')
 
-const fetch = {
-  getLastTransactionId: (inputData, callback) => {
-    var bitcoinPrivateKeyWIF = inputData.privateKey
-    const blockchainApi = require('utils/blockchainApi')
-    const bitcoin = require('bitcoinjs-lib')
-    const address = bitcoin.ECPair.fromWIF(bitcoinPrivateKeyWIF).getAddress()
-    bitcoinPrivateKeyWIF = undefined
+const blockchainApi = require('utils/blockchainApi')
+const Content = require('records/Content')
+const Invoice = require('records/Invoice')
+const trace = require('utils/trace')
+const validates = require('utils/validates')
 
-    return blockchainApi.lookup(address)
-      .then((addressInfo) => callback(null, addressInfo))
-      .catch((err) => callback(err, null))
-  },
-  inputsList: (contentId) => {
-    const Invoice = require('records/Invoice')
-    // To get inputsList, we need to first fetch all the keys.
-    // For each key, we need to fetch redisDb.get for that key
-    return Invoice.findAll(contentId)
-      .then((addresses) => Promise.all(
-        addresses.map((address) => Invoice.find)
-      ))
-  },
-  contentPayoutAddress: (contentId) => {
-    const contentDb = require('config/content-database')
-    if ('payoutAddress' in contentDb[contentId]) {
-      return contentDb[contentId].payoutAddress
-    }
-  },
-  serviceAddress: () => {
-    // TODO: we should calculate a new keypair, track it, and respond ꙲
-    return '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
-  }
-}
+// TODO: we should calculate a new keypair, track it, and respond
+const serviceAddress = () => '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw'
 
-function addressesPaidWithinTimeRange (contentId, timestamps, inputsList) {
-  // Return inputsList, to be passed to buildTransaction
-  // inputsList is an array of objects
-  // {
-  //    lastTransaction: bitcoin transactionId hash,
-  //    finalBalance: amount of satoshis,
-  //    privateKey: The private key for this address,
-  // }
-  // TODO refactor this to only be the callback.
-  // Someone else can do the inputsList.filter
-  // Instead this function now has 2 purposes
-  return inputsList.filter((record) => {
-    console.assert(
-      isObject(record),
-      'TypeError: expected Object, got ' + (typeof record)
-    )
+// in Satoshi
+const minimumPayoutBalance = 100000
+const minersFee = 500
 
-    if (record.contentId === contentId) { return true }
+const calculateFee = (total) => ({
+  payout: Math.floor((total - minersFee) * 0.91),
+  service: Math.floor((total - minersFee) * 0.09)
+})
 
-    if (record.payment) {
-      return record.payment.timestamp > timestamps.startTimestamp &&
-             record.payment.timestamp < timestamps.stopTimestamp
-    }
-    return false
-  })
-}
-
-function calculateFee (total) {
-  // TODO: is 1% a fair way to calculate the miner's fee?
-  return {
-    payout: (total * 0.9),
-    service: (total * 0.09),
-    miner: (total * 0.01)
-  }
-}
-
-function buildTransaction (transactionInfo) {
-  const bitcoin = require('bitcoinjs-lib')
-  const inputsList = transactionInfo.inputsList
+const buildTransaction = (transactionInfo) => {
+  const UXTO = transactionInfo.UXTO
   const payoutAddress = transactionInfo.payoutAddress
   const serviceAddress = transactionInfo.serviceAddress
-  var tx = new bitcoin.TransactionBuilder()
-  console.assert(isArray(inputsList), 'TypeError: inputsList not an Array')
-  console.assert(inputsList.length > 0, 'inputsList is empty')
-  console.assert(isString(payoutAddress) && isString(serviceAddress))
 
-  inputsList.forEach((input, index) => {
-    console.assert(input, 'can not build transaction, bad input')
-    tx.addInput(input.lastTransaction, index)
-  })
+  console.assert(UXTO.length > 0, 'UXTO is empty')
+  console.assert(validates.isBitcoinAddress(payoutAddress),
+                 'payoutAddress must be valid Bitcoin Address', payoutAddress)
+  console.assert(validates.isBitcoinAddress(serviceAddress),
+                 'serviceAddress must be valid Bitcoin Address', serviceAddress)
 
-  const amount = calculateFee(
-    inputsList.reduce((sum, x) => sum + x.finalBalance, 0)
-  )
-  console.assert(amount.payout > 0, 'Payout is empty, aborting. No money to pay out for this content right now')
+  const tx = new bitcoin.TransactionBuilder()
+
+  UXTO.forEach((output) => tx.addInput(output.hash, output.n))
+
+  const totalPayout = UXTO.reduce((sum, x) => sum + x['value'], 0)
+  console.assert(totalPayout > minimumPayoutBalance,
+                 `totalPayout ${totalPayout} is less than the minimumPayoutBalance ${minimumPayoutBalance}`)
+  const amount = calculateFee(totalPayout)
+  console.assert(amount.payout > 0,
+                 'Payout is empty, aborting. No money to pay out for this content right now')
 
   if (amount.payout > 0) {
     tx.addOutput(payoutAddress, amount.payout)
   }
+
   if (amount.service > 0) {
     tx.addOutput(serviceAddress, amount.service)
   }
 
-  inputsList.forEach((input, index) => {
-    var keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
+  UXTO.forEach((input, index) => {
+    const keyPair = bitcoin.ECPair.fromWIF(input.privateKey)
     tx.sign(index, keyPair)
   })
+
   return tx.build().toHex()
 }
 
-function isValidInput (inputObj) {
-  if (!isObject(inputObj)) { return false }
-  // type test of transaction input
-  if (!('finalBalance' in inputObj)) { return false }
-  if (!('privateKey' in inputObj)) { return false }
-  if (!('lastTransaction' in inputObj)) { return false }
-  return true
-}
+// returns all unspent transaction outputs
+// annotated with the transaction hash and the Content privateKey
+const getUXTO = flatMap((invoice) => (
+  flatMap((tx) => (
+    flatMap(
+      compose(set('hash', tx.hash), set('privateKey', invoice.privateKey)),
+      filter(
+        (out) => (!out.spent && isEqual(out.addr, invoice.address)),
+        tx.out))),
+    invoice.txs)
+))
 
-function addBlockchainInformationToInputs (invoiceList) {
-  const async = require('async')
-  // Fetch and merge all TX data we need as input in our transactions
-  return new Promise((resolve, reject) => {
-    async.mapLimit(invoiceList, 5, fetch.getLastTransactionId, (err, transactionInfo) => {
-      if (!err) {
-        resolve(
-          transactionInfo.map((txInfo) => {
-            return JSON.parse(txInfo.body)
-          })
-        )
-      } else {
-        reject(transactionInfo)
-        console.error('err!')
-      }
-    })
-  }).then((rawListOfTxInfo) => {
-    const listOfTxInfo = rawListOfTxInfo.filter((txInfo) => txInfo.txs.length > 0)
+// add finalBalance, lastTransaction to every input
+// Fetch and merge all TX data we need as input in our transactions
+const addBlockchainInformationToInvoices = (invoiceList) => (
+  new Promise((resolve, reject) => (
+    async.mapLimit(invoiceList, 5,
+      async.asyncify(compose(blockchainApi.getAddress, get('address'))),
+      (err, txInfo) => err ? reject(txInfo) : resolve(txInfo)
+    )
+  )).then(merge(invoiceList))
+)
 
-    if (listOfTxInfo.length < 1) return false
-
-    // Merge the results of getLastTransactionId with invoiceList
-    return invoiceList.map((invoice, index) => {
-      if ('paymentTimestamp' in invoice) {
-        if (listOfTxInfo[index] && 'final_balance' in listOfTxInfo[index]) {
-          var txInput = invoice
-          txInput.finalBalance = listOfTxInfo[index].final_balance
-
-          // TODO make sure txs[0] is the newest, not oldest
-          txInput.lastTransaction = listOfTxInfo[index].txs[0].hash
-          console.assert(isValidInput(txInput))
-
-          return txInput
-        }
-      } else {
-        return false // contains no paymentTimestamp
-      }
-    }).filter((invoice) => !!invoice) // filter out all marked with false
-  })
-}
-
-function payoutContent (contentId) {
-  // side effecty. Pays out all outstanding balances we owe to contentId
-  const blockchainApi = require('utils/blockchainApi')
-  return fetch.inputsList(contentId)
-    .then(addBlockchainInformationToInputs)
-    .then((inputsList) => {
-      console.assert(inputsList)
-      return {
-        inputsList: inputsList.filter((x) => !!x),
-        payoutAddress: fetch.contentPayoutAddress(contentId),
-        serviceAddress: fetch.serviceAddress()
-      }
-    })
+const payoutContent = (contentId) => (
+  Invoice.findAll(contentId)
+    .then(filter(Invoice.isPaid))
+    .then(addBlockchainInformationToInvoices)
+    .then(filter((invoice) => invoice.final_balance > 0))
+    .then((invoiceList) => (
+      Content.find(contentId).then((content) => ({
+        UXTO: getUXTO(invoiceList),
+        payoutAddress: content.payoutAddress,
+        serviceAddress: serviceAddress()
+      }))
+    ))
     .then(buildTransaction)
+    .then(trace('transaction: Broadcasting'))
     .then(blockchainApi.broadcastTransaction)
-    .then((result) => {
-      console.log('Message from blockchain.info:', result)
-      return result
-    })
-}
+    .then(trace('transacton: Message from blockchain.info'))
+)
 
 module.exports = {
-  addressesPaidWithinTimeRange: addressesPaidWithinTimeRange,
-  buildTransaction: buildTransaction,
-  calculateFee: calculateFee,
-  isValidInput: isValidInput,
-  payoutContent: payoutContent
+  addBlockchainInformationToInvoices,
+  buildTransaction,
+  calculateFee,
+  getUXTO,
+  payoutContent
 }

@@ -1,4 +1,4 @@
-const apiVersion = 0
+const apiVersion = require('config/api').apiVersion
 
 const Content = require('records/Content')
 const Invoice = require('records/Invoice')
@@ -9,6 +9,7 @@ const validates = require('utils/validates')
 const includes = require('lodash/includes')
 const isNil = require('lodash/isNil')
 
+// init express with middleware
 const app = require('express')()
 
 if (includes(process.argv, 'init')) {
@@ -21,6 +22,7 @@ if (includes(process.argv, 'init')) {
 app.use(require('cors')())
 app.use(require('body-parser').urlencoded())
 app.use(require('body-parser').json())
+
 // index
 app.get('/', (req, res) => (
   res.status(200).send(`Welcome to Momona! Do GET /${apiVersion}/content/:contentId`)
@@ -36,6 +38,7 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
   const contentId = req.params.contentId
 
   if (isNil(address)) {
+    // TODO: Content.find should be first, all paths need this.
     return Content.find(contentId).then((content) => {
       const invoice = Invoice.create(contentId)
       Invoice.save(invoice) // TODO have Invoice.save return a Promise
@@ -61,10 +64,9 @@ app.get(`/${apiVersion}/content/:contentId`, (req, res) => {
         })
       }
 
-      return blockchainApi.lookup(address)
+      return blockchainApi.getAddress(address)
         .then((rawAddressInformation) => {
-          const body = JSON.parse(rawAddressInformation.body)
-          if (blockchainApi.isPaid(body)) {
+          if (blockchainApi.isPaid(rawAddressInformation)) {
             Invoice.find(address).then((invoice) => {
               Invoice.save(Invoice.markInvoiceAsPaid(invoice))
             })
@@ -135,7 +137,7 @@ app.post(`/${apiVersion}/content`, (req, res) => {
     )
   }
 
-  req.body.price = parseInt(req.body.price)
+  req.body.price = parseInt(req.body.price, 10)
 
   return Content.save(req.body)
     .then((contentRecord) => {

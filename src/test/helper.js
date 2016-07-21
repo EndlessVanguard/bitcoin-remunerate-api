@@ -1,7 +1,6 @@
 const spyOn = (Record, fn, cb) => {
-  'use strict'
   const originalFn = Record[fn]
-  let callCount = 0
+  var callCount = 0
   Record[fn] = function () {
     callCount++
     return cb(...arguments)
@@ -12,8 +11,10 @@ const spyOn = (Record, fn, cb) => {
   }
 }
 
-module.exports = {
+const helper = {
+  spyOn,
   validAddress: '19qwUC4AgoqpPFHfyZ5tBD279WLsMAnUBw',
-  validWIF: '5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ',
-  spyOn: spyOn
+  validWIF: '5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ'
 }
+
+module.exports = helper

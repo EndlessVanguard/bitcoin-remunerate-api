@@ -1,8 +1,9 @@
 const test = require('tape')
 const Content = require('./Content')
-const isEqual = require('lodash/isEqual')
-const dissoc = require('lodash/fp/dissoc')
+
 const assoc = require('lodash/fp/assoc')
+const dissoc = require('lodash/fp/dissoc')
+const isEqual = require('lodash/fp/isEqual')
 
 const validContent = {
   contentId: 'my-cool-content',
@@ -19,10 +20,10 @@ test('isValidContent', (t) => {
     'Valid Content record is valid')
   t.assert(
     !Content.isValidContent(dissoc('contentId', validContent)),
-    'Content is missing contentId is invalid')
+    'Content missing contentId is invalid')
   t.assert(
     !Content.isValidContent(dissoc('content', validContent)),
-    'Content is missing content is invalid')
+    'Content missing content is invalid')
   t.assert(
     !Content.isValidContent(assoc('price', '10000', validContent)),
     'Content price can not be string')

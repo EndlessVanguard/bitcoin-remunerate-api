@@ -1,9 +1,10 @@
 const test = require('tape')
-const dissoc = require('lodash/fp/dissoc')
 const isValid = require('./isValid')
 
-const isEqual = require('lodash/isEqual')
-const validates = require('../utils/validates.js')
+const dissoc = require('lodash/fp/dissoc')
+const isEqual = require('lodash/fp/isEqual')
+
+const validates = require('utils/validates.js')
 
 const mockProperties = {
   contentId: validates.errorsInString,
@@ -52,7 +53,7 @@ test('errorsInRecord', (t) => {
         mockProperties
       ),
       ['Currency must be "satoshi"',
-       'Bitcoin Address must begin with a "1" or "3"',
+       'Bitcoin Address must begin with one of: "1", "3"',
        'Bitcoin Address must be a String']
     ),
     'Removing many required fields yields multiple errors'

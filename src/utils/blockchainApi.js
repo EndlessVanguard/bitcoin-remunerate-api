@@ -1,45 +1,50 @@
+const includes = require('lodash/fp/includes')
 const request = require('request')
-const includes = require('lodash/includes')
-const trim = require('lodash/trim')
+const trim = require('lodash/fp/trim')
 
-const blockchainAddressLookupUrl = (address) => (
-  'https://blockchain.info/rawaddr/' + address)
+const blockchainUrl = 'https://blockchain.info/'
 
 // Sometimes blockchain.info sends errors with status 200
 // This is how we deal with that
-const lookupErrors = ['Checksum does not validate']
-function lookup (address) {
+const lookupErrors = [
+  'Checksum does not validate',
+  'Input too short',
+  'Maximum concurrent requests from this IP reached. Please try again shortly.'
+]
+
+const broadcastTransaction = (transactionHex) => (
+  new Promise((resolve, reject) => (
+    request.post({
+      url: blockchainUrl + 'pushtx',
+      form: { tx: transactionHex }
+    }, (error, res, body) => {
+      if (error || includes(trim(body), lookupErrors)) {
+        reject(error || body)
+      } else {
+        // This API does not return JSON
+        resolve(body)
+      }
+    })
+  ))
+)
+
+function getAddress (address) {
   return new Promise((resolve, reject) => {
     request.get({
-      url: blockchainAddressLookupUrl(address)
+      url: blockchainUrl + `rawaddr/${address}`
     }, (error, response, body) => {
-      if (error || includes(lookupErrors, trim(body))) {
-        return reject(error || body)
+      if (error || includes(trim(body), lookupErrors)) {
+        reject(error || body)
       } else {
-        // FIXME should give back response.body
-        return resolve(response)
+        resolve(JSON.parse(body))
       }
     })
   })
 }
 
-function broadcastTransaction (transactionHex) {
-  console.log('broadcasting\n')
-  console.log(transactionHex)
-  console.log('\n\n')
-  return new Promise((resolve, reject) => {
-    request.post({
-      url: 'https://blockchain.info/pushtx',
-      form: { tx: transactionHex }
-    }, (err, res, body) => {
-      if (err) { reject(err) }
-      resolve(body)
-    })
-  })
-}
-
+// TODO: do we need this method here, or should it be chained in getAddress?
 function isPaid (blockchainHttpResponse) {
-  if (blockchainHttpResponse === 'Input too short' || blockchainHttpResponse === 'Checksum does not validate') {
+  if (includes(blockchainHttpResponse, lookupErrors)) {
     return false
   }
   const price = 1
@@ -48,7 +53,7 @@ function isPaid (blockchainHttpResponse) {
 }
 
 module.exports = {
-  broadcastTransaction: broadcastTransaction,
-  lookup: lookup,
-  isPaid: isPaid
+  broadcastTransaction,
+  getAddress,
+  isPaid
 }
